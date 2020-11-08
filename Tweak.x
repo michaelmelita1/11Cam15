@@ -1,3 +1,4 @@
+#import <UIKit/UIKit.h>
 @interface CAMViewfinderViewController
 - (NSInteger)_currentMode;
 @end
@@ -7,12 +8,12 @@
 - (void)_handleButtonTappedForTripleCameraMode:(id)arg1;
 @end
 NSInteger cameraMode;
-%hook CAMZoomControl							//11 Pro Zoom Dial
+%hook CAMZoomControl						
 - (void)_configureForControlMode:(long long)arg1 zoomFactor:(double)arg2 zoomFactors:(id)arg3 displayZoomFactors:(id)arg4 zoomButtonContentType:(long long)arg5 animated:(BOOL)arg6 {
 	cameraMode = [[self _viewControllerForAncestor] _currentMode];
 [self setHidden:0];
 	switch(cameraMode) {
-   	case 0 : // Photo mode						//Zoom Factors for Dial
+   	case 0 : // Photo mode						
 		arg3 = @[@1, @2, @3, @10];				
 		arg4 = @[@1, @2, @3, @10];
    	  	break;
@@ -42,6 +43,9 @@ NSInteger cameraMode;
 -(bool)isTripleCameraSupported {
 	return YES;
 }
+-(double)defaultZoomFactorForMode:(long long)arg1 device:(long long)arg2 videoConfiguration:(long long)arg3 captureOrientation:(long long)arg4 {
+	return 1;
+}
 -(long long) zoomDialStyle {
 		return 1;
 }
@@ -51,18 +55,23 @@ NSInteger cameraMode;
 -(bool)arePortraitEffectsSupported {
 		return YES;
 }
--(double)defaultZoomFactorForMode:(long long)arg1 device:(long long)arg2 videoConfiguration:(long long)arg3 captureOrientation:(long long)arg4 {
-	return 1;
-}
 -(long long)supportedPortraitLightingVersion {	
                 return 2;
+}
+-(bool)_backStageLightPortaitEffectsSupported {
+		return YES;
+}
+-(bool)isBackLiveStageLightSupported {
+		return YES;
 }
 -(bool)isLivePreviewSupportedForLightingType:(long long)arg1 devicePosition:(long long)arg2 {
 		return YES;
 		arg1 = 1;
 		arg2 = 1;
 }
-
+-(bool)isLivePhotoAutoModeSupported {
+		return YES;
+}
 -(bool)isDepthEffectApertureSupported {
 		return YES;
 }

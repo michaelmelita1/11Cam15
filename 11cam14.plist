@@ -1,1 +1,7 @@
-{ Filter = { Bundles = ( "com.apple.camera"); }; }
+{
+	Filter = {
+		Bundles = (
+			"com.apple.UIKit",
+		);
+	};
+}

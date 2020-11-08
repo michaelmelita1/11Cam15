@@ -1,6 +1,6 @@
 FINALPACKAGE=1
 ARCHS = arm64
-TARGET = iphone:13.2
+TARGET = iphone:13.7
 INSTALL_TARGET_PROCESSES = Camera
 
 include $(THEOS)/makefiles/common.mk
