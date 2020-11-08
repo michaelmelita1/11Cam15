@@ -40,6 +40,10 @@ NSInteger cameraMode;
 }
 %end
 %hook CAMCaptureCapabilities
+
+-(BOOL)isModernHDRSupported {
+	return YES;
+}
 -(bool)isTripleCameraSupported {
 	return YES;
 }
