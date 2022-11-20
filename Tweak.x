@@ -1,54 +1,7 @@
 #import <UIKit/UIKit.h>
-@interface CAMViewfinderViewController
-- (NSInteger)_currentMode;
-@end
-@interface CAMZoomControl : UIView
-- (id)_viewControllerForAncestor;
-- (void)setHidden:(BOOL)arg1;
-- (void)_handleButtonTappedForTripleCameraMode:(id)arg1;
-@end
-NSInteger cameraMode;
-%hook CAMZoomControl						
-- (void)_configureForControlMode:(long long)arg1 zoomFactor:(double)arg2 zoomFactors:(id)arg3 displayZoomFactors:(id)arg4 zoomButtonContentType:(long long)arg5 animated:(BOOL)arg6 {
-	cameraMode = [[self _viewControllerForAncestor] _currentMode];
-[self setHidden:0];
-	switch(cameraMode) {
-   	case 0 : // Photo mode						
-		arg3 = @[@1, @2, @3, @10];				
-		arg4 = @[@1, @2, @3, @10];
-   	  	break;
-   	case 1 : // Video mode	
-		arg3 = @[@1, @2, @3, @6];
-		arg4 = @[@1, @2, @3, @6];	
-   	  	break;
-	}
-	%orig;	
-}
--(bool)_isButtonPlatterSupportedForConfiguration {
-	if (cameraMode == 0 | cameraMode == 1) {
-		return true; 
-	} else {
-		return false;
-	}
-}
--(void)_handleButtonTapped:(id)arg1 {
-	if (cameraMode == 0 | cameraMode == 1) {
-		[self _handleButtonTappedForTripleCameraMode:arg1];
-	} else {
-		%orig;
-	}
-}
-%end
 %hook CAMCaptureCapabilities
-
 -(BOOL)isModernHDRSupported {
 	return YES;
-}
--(bool)isTripleCameraSupported {
-	return YES;
-}
--(double)defaultZoomFactorForMode:(long long)arg1 device:(long long)arg2 videoConfiguration:(long long)arg3 captureOrientation:(long long)arg4 {
-	return 1;
 }
 -(long long) zoomDialStyle {
 		return 1;
