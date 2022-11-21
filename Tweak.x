@@ -3,6 +3,12 @@
 -(BOOL)isModernHDRSupported {
 	return YES;
 }
+-(BOOL)isNeuralEngineSupported {
+    return YES;
+}
+-(BOOL)isDeepFusionSupported {
+    return YES;
+}
 -(long long) zoomDialStyle {
 		return 2;
 }
@@ -12,22 +18,43 @@
 -(BOOL)isCTMSupportSupressed {
     return NO;
 }
+-(BOOL)isSpatialOverCaptureSupported {
+    return YES;
+}
+-(BOOL)isBackSpatialOverCaptureSupported {
+    return YES;
+}
+-(BOOL)contentAwareDistortionCorrectionSupported {
+    return YES;
+}
 -(BOOL)isSemanticStylesSupported {
     return YES;
 }
--(BOOL)allowHaptics {
+-(BOOL)enableSemanticDevelopmentFilterDebugging {
+    return YES;
+}
+-(BOOL)isLowLightSupported {
+    return YES;
+}
+-(BOOL)isBackLowLightSupported {
+    return YES;
+}
+-(BOOL)isCinematicModeSupported {
     return YES;
 }
 -(BOOL)isBackCinematicModeSupported {
     return YES;
 }
+-(BOOL)isPortraitModeSupported {
+    return YES;
+}
+-(BOOL)isFrontPortraitModeSupported {
+    return YES;
+}
 -(BOOL)isFrontSingleCameraPortraitModeSupported {
     return YES;
 }
--(BOOL)isNeuralEngineSupported {
-    return YES;
-}
--(BOOL)isBackLowLightSupported {
+-(BOOL)isBackSingleCameraPortraitModeSupported {
     return YES;
 }
 -(bool)arePortraitEffectsSupported {
