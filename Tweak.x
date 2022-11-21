@@ -4,7 +4,7 @@
 	return YES;
 }
 -(long long) zoomDialStyle {
-		return 3;
+		return 2;
 }
 -(bool)isCTMSupported {
     return YES;
