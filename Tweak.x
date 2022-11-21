@@ -124,9 +124,6 @@
 -(BOOL)isMultiCamSupported {
 		return YES;
 }
--(BOOL)isIrisSupported {
-		return YES;
-}
 -(BOOL)isSISSupported {
 		return YES;
 }
