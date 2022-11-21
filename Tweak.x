@@ -1,8 +1,15 @@
 #import <UIKit/UIKit.h>
 
 %hook CAMCaptureCapabilities
--(long long) zoomDialStyle {
-		return 2;
+
+-(BOOL)featureDevelopmentForceSingleCamera {
+    return YES;
+}
+-(BOOL)isBackWideDualSupported {
+    return YES;
+}
+-(BOOL)isZoomPlatterSupported {
+    return YES;
 }
 -(bool)isCTMSupported {
     return YES;
@@ -14,6 +21,9 @@
     return YES;
 }
 -(BOOL)enableSemanticDevelopmentFilterDebugging {
+    return YES;
+}
+-(BOOL)semanticDevelopmentSupported {
     return YES;
 }
 -(bool)arePortraitEffectsSupported {
@@ -58,9 +68,4 @@
 		return 50;
 }
 
-%end
-%hook CAMViewfinderViewController 
--(BOOL)_shouldUseZoomControlInsteadOfSlider {
-    return YES;
-}
 %end
