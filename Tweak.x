@@ -130,6 +130,30 @@
 -(BOOL)isSISSupported {
 		return YES;
 }
+-(BOOL)_isDepthDataDeliveryEnabled {
+		return YES;
+}
+-(BOOL)isCinematicFramingActive {
+		return YES;
+}
++(BOOL)isEligibleForBackgroundBlur {
+		return YES;
+}
+-(BOOL)isBackgroundBlurActive {
+		return YES;
+}
+-(BOOL)isProResSupported {
+		return YES;
+}
+-(BOOL)isLowLightBoostSupported {
+		return YES;
+}
+-(BOOL)isLowLightBoostEnabled {
+		return YES;
+}
+-(BOOL)automaticallyEnablesLowLightBoostWhenAvailable {
+		return YES;
+}
 %end
 %hook CAMViewfinderViewController 
 -(BOOL)_shouldUseZoomControlInsteadOfSlider {
