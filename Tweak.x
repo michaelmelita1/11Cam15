@@ -103,6 +103,33 @@
 -(float)defaultPortraitLightingEffectStrength {
 		return 50;
 }
+-(BOOL)isStreamingDisparitySupported {
+		return YES;
+}
+-(BOOL)isStreamingDepthSupported {
+		return YES;
+}
+-(BOOL)isStillImageDisparitySupported {
+		return YES;
+}
+-(BOOL)isStillImageDepthSupported {
+		return YES;
+}
+-(BOOL)isGlobalToneMappingSupported {
+		return YES;
+}
+-(BOOL)isSpatialOverCaptureSupported {
+		return YES;
+}
+-(BOOL)isMultiCamSupported {
+		return YES;
+}
+-(BOOL)isIrisSupported {
+		return YES;
+}
+-(BOOL)isSISSupported {
+		return YES;
+}
 %end
 %hook CAMViewfinderViewController 
 -(BOOL)_shouldUseZoomControlInsteadOfSlider {
