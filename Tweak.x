@@ -1,4 +1,7 @@
 #import <UIKit/UIKit.h>
+#import <AVFCapture/AVFCapture-Structs.h>
+#import <libobjc.A.dylib/NSSecureCoding.h>
+
 %hook CAMCaptureCapabilities
 -(BOOL)isModernHDRSupported {
 	return YES;
@@ -130,6 +133,11 @@
 %end
 %hook CAMViewfinderViewController 
 -(BOOL)_shouldUseZoomControlInsteadOfSlider {
+    return YES;
+}
+%end
+%hook AVApplePortraitMetadata 
+-(BOOL)supportsSecureCoding {
     return YES;
 }
 %end
