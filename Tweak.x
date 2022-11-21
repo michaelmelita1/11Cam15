@@ -44,7 +44,7 @@
 }
 -(bool)isLivePreviewSupportedForLightingType:(long long)arg1 devicePosition:(long long)arg2 {
 		return YES;
-		arg1 = 1;
+		arg1 = 4;
 		arg2 = 1;
 }
 -(bool)isLivePhotoAutoModeSupported {
