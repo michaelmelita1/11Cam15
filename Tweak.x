@@ -9,6 +9,27 @@
 -(bool)isCTMSupported {
     return YES;
 }
+-(BOOL)isCTMSupportSupressed {
+    return NO;
+}
+-(BOOL)isSemanticStylesSupported {
+    return YES;
+}
+-(BOOL)allowHaptics {
+    return YES;
+}
+-(BOOL)isBackCinematicModeSupported {
+    return YES;
+}
+-(BOOL)isFrontSingleCameraPortraitModeSupported {
+    return YES;
+}
+-(BOOL)isNeuralEngineSupported {
+    return YES;
+}
+-(BOOL)isBackLowLightSupported {
+    return YES;
+}
 -(bool)arePortraitEffectsSupported {
 		return YES;
 }
