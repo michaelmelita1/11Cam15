@@ -10,7 +10,7 @@
     return YES;
 }
 -(long long) zoomDialStyle {
-		return 2;
+		return 1;
 }
 -(bool)isCTMSupported {
     return YES;
@@ -71,7 +71,7 @@
 }
 -(bool)isLivePreviewSupportedForLightingType:(long long)arg1 devicePosition:(long long)arg2 {
 		return YES;
-		arg1 = 4;
+		arg1 = 1;
 		arg2 = 1;
 }
 -(bool)isLivePhotoAutoModeSupported {
