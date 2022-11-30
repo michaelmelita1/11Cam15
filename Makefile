@@ -5,9 +5,9 @@ INSTALL_TARGET_PROCESSES = Camera
 
 include $(THEOS)/makefiles/common.mk
 
-TWEAK_NAME = 11cam14
-11cam14_FILES = Tweak.x
-11cam14_CFLAGS = -fobjc-arc
+TWEAK_NAME = 11cam15
+11cam15_FILES = Tweak.x
+11cam15_CFLAGS = -fobjc-arc
 
 include $(THEOS_MAKE_PATH)/tweak.mk
 

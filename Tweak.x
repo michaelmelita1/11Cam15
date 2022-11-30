@@ -7,7 +7,10 @@
 -(BOOL)isNeuralEngineSupported {
     return YES;
 }
--(BOOL)isDeepFusionSupported {
+-(BOOL)imagePickerUsesModernLayout {
+	return YES;
+}
+-(BOOL)isZoomPlatterSupported {
     return YES;
 }
 -(long long) zoomDialStyle {
@@ -19,43 +22,7 @@
 -(BOOL)isCTMSupportSupressed {
     return NO;
 }
--(BOOL)isSpatialOverCaptureSupported {
-    return YES;
-}
--(BOOL)isBackSpatialOverCaptureSupported {
-    return YES;
-}
--(BOOL)contentAwareDistortionCorrectionSupported {
-    return YES;
-}
--(BOOL)isSemanticStylesSupported {
-    return YES;
-}
--(BOOL)enableSemanticDevelopmentFilterDebugging {
-    return YES;
-}
--(BOOL)isLowLightSupported {
-    return YES;
-}
--(BOOL)isBackLowLightSupported {
-    return YES;
-}
--(BOOL)isCinematicModeSupported {
-    return YES;
-}
--(BOOL)isBackCinematicModeSupported {
-    return YES;
-}
--(BOOL)isPortraitModeSupported {
-    return YES;
-}
--(BOOL)isFrontPortraitModeSupported {
-    return YES;
-}
--(BOOL)isFrontSingleCameraPortraitModeSupported {
-    return YES;
-}
--(BOOL)isBackSingleCameraPortraitModeSupported {
+-(BOOL)deviceSupportsCTM {
     return YES;
 }
 -(bool)arePortraitEffectsSupported {
@@ -104,52 +71,7 @@
 -(float)defaultPortraitLightingEffectStrength {
 		return 50;
 }
--(BOOL)isStreamingDisparitySupported {
-		return YES;
-}
--(BOOL)isStreamingDepthSupported {
-		return YES;
-}
--(BOOL)isStillImageDisparitySupported {
-		return YES;
-}
--(BOOL)isStillImageDepthSupported {
-		return YES;
-}
--(BOOL)isGlobalToneMappingSupported {
-		return YES;
-}
--(BOOL)isSpatialOverCaptureSupported {
-		return YES;
-}
 -(BOOL)isMultiCamSupported {
-		return YES;
-}
--(BOOL)isSISSupported {
-		return YES;
-}
--(BOOL)_isDepthDataDeliveryEnabled {
-		return YES;
-}
--(BOOL)isCinematicFramingActive {
-		return YES;
-}
-+(BOOL)isEligibleForBackgroundBlur {
-		return YES;
-}
--(BOOL)isBackgroundBlurActive {
-		return YES;
-}
--(BOOL)isProResSupported {
-		return YES;
-}
--(BOOL)isLowLightBoostSupported {
-		return YES;
-}
--(BOOL)isLowLightBoostEnabled {
-		return YES;
-}
--(BOOL)automaticallyEnablesLowLightBoostWhenAvailable {
 		return YES;
 }
 %end
@@ -158,8 +80,4 @@
     return YES;
 }
 %end
-%hook AVApplePortraitMetadata 
--(BOOL)supportsSecureCoding {
-    return YES;
-}
-%end
+
