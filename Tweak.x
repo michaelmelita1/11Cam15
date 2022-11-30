@@ -1,9 +1,6 @@
 #import <UIKit/UIKit.h>
 
 %hook CAMCaptureCapabilities
--(BOOL)isModernHDRSupported {
-	return YES;
-}
 -(BOOL)isNeuralEngineSupported {
     return YES;
 }
@@ -19,10 +16,7 @@
 -(BOOL)isCTMSupportSupressed {
     return NO;
 }
--(BOOL)isSpatialOverCaptureSupported {
-    return YES;
-}
--(BOOL)isBackSpatialOverCaptureSupported {
+-(BOOL)deviceSupportsCTM {
     return YES;
 }
 -(BOOL)contentAwareDistortionCorrectionSupported {
@@ -34,16 +28,34 @@
 -(BOOL)enableSemanticDevelopmentFilterDebugging {
     return YES;
 }
+-(BOOL)isModernHDRSupported {
+	return YES;
+}
+-(BOOL)imagePickerUsesModernLayout {
+	return YES;
+}
+-(BOOL)captureOnTouchDown {
+		return YES;
+}
+-(BOOL)automaticallyEnablesLowLightBoostWhenAvailable {
+		return YES;
+}
 -(BOOL)isLowLightSupported {
+    return YES;
+}
+-(BOOL)portraitZoomSupported {
+    return YES;
+}
+-(BOOL)isZoomPlatterSupported {
     return YES;
 }
 -(BOOL)isBackLowLightSupported {
     return YES;
 }
 -(BOOL)isCinematicModeSupported {
-    return YES;
+    return NO;
 }
--(BOOL)isBackCinematicModeSupported {
+-(BOOL)responsiveShutterSupported {
     return YES;
 }
 -(BOOL)isPortraitModeSupported {
@@ -53,9 +65,6 @@
     return YES;
 }
 -(BOOL)isFrontSingleCameraPortraitModeSupported {
-    return YES;
-}
--(BOOL)isBackSingleCameraPortraitModeSupported {
     return YES;
 }
 -(bool)arePortraitEffectsSupported {
@@ -104,24 +113,6 @@
 -(float)defaultPortraitLightingEffectStrength {
 		return 50;
 }
--(BOOL)isStreamingDisparitySupported {
-		return YES;
-}
--(BOOL)isStreamingDepthSupported {
-		return YES;
-}
--(BOOL)isStillImageDisparitySupported {
-		return YES;
-}
--(BOOL)isStillImageDepthSupported {
-		return YES;
-}
--(BOOL)isGlobalToneMappingSupported {
-		return YES;
-}
--(BOOL)isSpatialOverCaptureSupported {
-		return YES;
-}
 -(BOOL)isMultiCamSupported {
 		return YES;
 }
@@ -132,7 +123,7 @@
 		return YES;
 }
 -(BOOL)isCinematicFramingActive {
-		return YES;
+		return NO;
 }
 +(BOOL)isEligibleForBackgroundBlur {
 		return YES;
@@ -141,7 +132,7 @@
 		return YES;
 }
 -(BOOL)isProResSupported {
-		return YES;
+		return NO;
 }
 -(BOOL)isLowLightBoostSupported {
 		return YES;
@@ -149,7 +140,16 @@
 -(BOOL)isLowLightBoostEnabled {
 		return YES;
 }
--(BOOL)automaticallyEnablesLowLightBoostWhenAvailable {
+-(BOOL)isSemanticStyleRenderingSupported {
+		return YES;
+}
+-(BOOL)isGlobalToneMappingSupported {
+		return YES;
+}
+-(BOOL)isHighPhotoQualitySupported {
+		return YES;
+}
+-(BOOL)supportsQuadraHighResolutionStillImageOutput {
 		return YES;
 }
 %end
@@ -161,5 +161,50 @@
 %hook AVApplePortraitMetadata 
 -(BOOL)supportsSecureCoding {
     return YES;
+}
+%end
+
+%hook CAMDynamicShutterControl
+-(BOOL)_shouldShortPressOnTouchUp {
+		return YES;
+}
+%end
+
+%hook CAMContentAwareDistortionCorrectionCommand
+-(BOOL)_isEnabled {
+		return YES;
+}
+%end
+
+%hook CAMLowLightBoostCommand
+-(BOOL)_isEnabled {
+		return YES;
+}
+%end
+
+%hook CAMLowLightConfigurationCommand
+-(BOOL)_isEnabled {
+		return YES;
+}
+%end
+
+%hook CAMLowLightSlider
+-(BOOL)_isPerformingCaptureAnimation {
+		return YES;
+}
+-(BOOL)isLowLightActive {
+		return YES;
+}
+%end
+
+%hook CAMLowLightStatusIndicator
+-(BOOL)canShowValue {
+		return YES;
+}
+-(BOOL)shouldUseActiveTintForCurrentState {
+		return YES;
+}
+-(long long)lowLightMode {
+		return YES;
 }
 %end
