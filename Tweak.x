@@ -1,12 +1,6 @@
 #import <UIKit/UIKit.h>
 
 %hook CAMCaptureCapabilities
--(BOOL)isNeuralEngineSupported {
-    return YES;
-}
--(BOOL)imagePickerUsesModernLayout {
-	return YES;
-}
 -(BOOL)isZoomPlatterSupported {
     return YES;
 }
@@ -47,6 +41,9 @@
 }
 -(bool)isPortraitEffectIntensitySupported {
 		return YES;
+}
+-(bool)isExposureSliderSupported {
+                return YES;
 }
 %end
 %hook AVCaptureDeviceFormat				//Depth Control and Intensity Control
