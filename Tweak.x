@@ -1,9 +1,6 @@
 #import <UIKit/UIKit.h>
 
 %hook CAMCaptureCapabilities
--(BOOL)isModernHDRSupported {
-	return YES;
-}
 -(BOOL)isNeuralEngineSupported {
     return YES;
 }
