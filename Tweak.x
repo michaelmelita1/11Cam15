@@ -16,6 +16,12 @@
 -(BOOL)deviceSupportsCTM {
     return YES;
 }
+ -(bool) allowDynamicShutterZoom {
+                return YES;
+}
+-(bool) sfCameraFontSupported {
+                return YES;
+}
 -(bool)arePortraitEffectsSupported {
 		return YES;
 }
