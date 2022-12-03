@@ -2,19 +2,19 @@
 
 %hook CAMCaptureCapabilities
 -(BOOL)isZoomPlatterSupported {
-    return YES;
+                return YES;
 }
 -(long long) zoomDialStyle {
 		return 1;
 }
 -(bool)isCTMSupported {
-    return YES;
+                return YES;
 }
 -(BOOL)isCTMSupportSupressed {
-    return NO;
+                 return NO;
 }
 -(BOOL)deviceSupportsCTM {
-    return YES;
+                 return YES;
 }
  -(bool) allowDynamicShutterZoom {
                 return YES;
@@ -49,6 +49,15 @@
 		return YES;
 }
 -(bool)isExposureSliderSupported {
+                return YES;
+}
+-(bool)isImageAnalysisSupported {
+                return YES;
+}
+-(bool)imageAnalysisShowsInactiveTextRegions {
+                return YES;
+}
+-(bool)isImageAnalysisButtonAlwaysVisible {
                 return YES;
 }
 %end
