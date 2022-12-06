@@ -27,6 +27,6 @@ https://michaelmelita1.github.io
 
 ## Compatibility
 
-iPhone SE - iPhone 7 Plus
+iPhone SE - iPhone 7 Plus, iPod 7
 
 Techinically Compatible with A11 iPhones, but there is a Shutter Bug
