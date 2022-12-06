@@ -37,5 +37,8 @@ Flylarb & Ezekiel1998 for testing and adding features
 
 ## THINGS TO DO
 Portrait Bokeh Editing in Photos app
+
 Live Text Detection (Instead of a constant Button)
+
+Photographic Styles (Possibly to do with Semanitic Styles)
 
