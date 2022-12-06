@@ -1,5 +1,9 @@
 #import <UIKit/UIKit.h>
-
+%hook CAMViewfinderViewController 
+-(BOOL)_shouldUseZoomControlInsteadOfSlider {
+    return YES;
+}
+%end
 %hook CAMCaptureCapabilities
 -(BOOL)isZoomPlatterSupported {
                 return YES;
@@ -84,9 +88,3 @@
 		return YES;
 }
 %end
-%hook CAMViewfinderViewController 
--(BOOL)_shouldUseZoomControlInsteadOfSlider {
-    return YES;
-}
-%end
-
