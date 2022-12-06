@@ -34,3 +34,8 @@ Techinically Compatible with A11 iPhones, but there is a Shutter Bug
 ## Credits
 Flylarb & Ezekiel1998 for testing and adding features
 
+
+## THINGS TO DO
+Portrait Bokeh Editing in Photos app
+Live Text Detection (Instead of a constant Button)
+
