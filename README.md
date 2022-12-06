@@ -42,3 +42,7 @@ Live Text Detection (Instead of a constant Button)
 
 Photographic Styles (Possibly to do with Semanitic Styles)
 
+Fix the damn shutter bug on A11 devices
+
+Fix 1080p recording on A9, A10
+
