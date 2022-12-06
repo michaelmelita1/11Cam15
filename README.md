@@ -1,6 +1,6 @@
 # 11Cam15
 
-iPhone 13 Camera App and a lot of things that come with it!
+iPhone 11 Camera App
 
 Zoom Platter (iPhone 13 Style)
 
