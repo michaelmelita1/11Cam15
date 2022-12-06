@@ -58,9 +58,6 @@
 -(bool)isImageAnalysisSupported {
                 return YES;
 }
--(bool)imageAnalysisShowsInactiveTextRegions {
-                return YES;
-}
 -(bool)isImageAnalysisButtonAlwaysVisible {
                 return YES;
 }
