@@ -61,6 +61,10 @@
 -(bool)isImageAnalysisButtonAlwaysVisible {
                 return YES;
 }
+-(BOOL)contentAwareDistortionCorrectionSupported {
+    return YES;
+}
+
 %end
 %hook AVCaptureDeviceFormat				//Depth Control and Intensity Control
 -(float)minSimulatedAperture {
@@ -82,6 +86,9 @@
 		return 50;
 }
 -(BOOL)isMultiCamSupported {
+		return YES;
+}
+-(BOOL)isContentAwareDistortionCorrectionSupported {
 		return YES;
 }
 %end
