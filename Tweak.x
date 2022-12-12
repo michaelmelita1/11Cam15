@@ -55,16 +55,21 @@
 -(bool)isExposureSliderSupported {
                 return YES;
 }
--(bool)isImageAnalysisSupported {
+-(bool)isImageAnalysisSupported {                      //LiveText
                 return YES;
 }
 -(bool)isImageAnalysisButtonAlwaysVisible {
                 return YES;
 }
+-(BOOL)isSpatialOverCaptureSupported {                  //View Outside the Frame Test
+    return YES;
+}
+-(BOOL)isBackSpatialOverCaptureSupported {
+    return YES;
+}
 -(BOOL)contentAwareDistortionCorrectionSupported {
     return YES;
 }
-
 %end
 %hook AVCaptureDeviceFormat				//Depth Control and Intensity Control
 -(float)minSimulatedAperture {
