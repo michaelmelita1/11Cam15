@@ -67,9 +67,6 @@
 -(bool)isBackSpatialOverCaptureSupported {
     return YES;
 }
--(bool)contentAwareDistortionCorrectionSupported {
-    return YES;
-}
 %end
 %hook AVCaptureDeviceFormat				//Depth Control and Intensity Control
 -(float)minSimulatedAperture {
