@@ -6,6 +6,6 @@ Depends: mobilesubstrate, firmware (>= 15.0), firmware (<< 16.0), gsc.iphone | g
 Section: Tweaks
 Description: New Camera app for iOS 15
 Author: Michael Melita, Flylarb & Ezekiel1998
-Name: 11Cam15
+Name: 11Cam15-SpacialTest
 Depiction: https://michaelmelita1.github.io/depictions/?p=com.michaelmelita1.11cam15
 Sileodepiction: https://michaelmelita1.github.io/sileodepictions/com.michaelmelita1.11cam15/info.json
