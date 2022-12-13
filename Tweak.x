@@ -96,4 +96,7 @@
 -(BOOL)isContentAwareDistortionCorrectionSupported {
 		return YES;
 }
+-(BOOL)isSpatialOverCaptureSupported {
+		return YES;
+}
 %end
