@@ -8,7 +8,7 @@
 -(bool)isZoomPlatterSupported {
                 return YES;
 }
--(long long) zoomDialStyle {
+-(long long)zoomDialStyle {
 		return 1;
 }
 -(bool)isCTMSupported {
@@ -32,7 +32,7 @@
 -(long long)supportedPortraitLightingVersion {	
                 return 2;
 }
--(bool)_backStageLightPortaitEffectsSupported {
+-(bool)backStageLightPortaitEffectsSupported {
 		return YES;
 }
 -(bool)isBackLiveStageLightSupported {
