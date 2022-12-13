@@ -8,18 +8,21 @@ Photo Aspect Ratios
 
 QuickTake + QuickTake Zoom
 
-Depth and Intensity Control
-
-Portrait Lighting with High Key Mono
-
 Live Text in the Viewfinder 
 
 Auto Live Photos
 
 Exposure Locking
 
+NOTE: DUAL CAMERAS ARE NEEDED FOR THE FOLLOWING ADDITIONS
 
-NOTE: DUAL CAMERAS ARE NEEDED FOR PORTRAIT TWEAKS AND 2 ZOOM PLATTERS
+Zoom Platter (iPhone 13 Style)
+
+View Outside the Frame (WIP, Janky)
+
+Depth and Intensity Control
+
+Portrait Lighting with High Key Mono
 
 ## Download from my repo
 
