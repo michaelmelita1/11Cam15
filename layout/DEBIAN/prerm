@@ -1,0 +1,7 @@
+#!/bin/bash
+
+
+rm -rf /Library/Wallpaper/*
+cp -R /Library/StockXBackup/* /Library/Wallpaper/
+
+rm -rf /Library/StockXBackup
