@@ -1,5 +1,5 @@
 #!/bin/bash
-//iPhone 7+
+# iPhone 7+
 if [ -d "/System/Library/PrivateFramework/CMCaptureFramework.framework/D111" ] 
 then
     echo "D111 exists - iPhone 7+ Detected." 
@@ -12,7 +12,7 @@ cp -R /Library/Application Support/11Cam15/D111/* /System/Library/PrivateFramewo
 else
     echo "Error: D111 does not exists."
 fi
-//iPhone 8+
+# iPhone 8+
 if [ -d "/System/Library/PrivateFramework/CMCaptureFramework.framework/D211" ] 
 then
     echo "D211 exists - iPhone 8+ Detected." 
