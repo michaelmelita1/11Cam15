@@ -35,9 +35,9 @@ iPhone SE - iPhone 7 Plus, iPod 7
 Techinically Compatible with A11 iPhones, but there is a Shutter Bug
 
 ## Credits
-Thanks to Ezekiel1998 for adding many new features
+Thanks to Ezekiel1998 helping develop LiveText, SpatialOvercam, Exposure Locking and the 1080p fix
 
-
+Thanks to Flylarb for helping fix the zoom platter feature for iOS 15
 ## THINGS TO DO
 Portrait Bokeh Editing in Photos app
 
