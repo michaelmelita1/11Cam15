@@ -97,3 +97,14 @@
 		return YES;
 }
 %end
+%hook AVCapturePhotoSettings
+-(bool)isAutoSpatialOverCaptureEnabled {
+		return YES;
+}
+-(BOOL)arePreviewPhotoFormatDimensionsLimitedToDisplayDimensions {
+		return YES;
+}
+-(BOOL)embedsDepthDataInPhoto {
+		return YES;
+}
+%end
