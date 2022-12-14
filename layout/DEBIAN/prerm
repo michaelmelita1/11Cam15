@@ -4,7 +4,7 @@ if [ -d "/System/Library/PrivateFramework/CMCaptureFramework.framework/D111" ]
 then
     echo "D111 exists - iPhone 7+ Detected." 
     rm -rf /System/Library/PrivateFramework/CMCaptureFramework.framework/D111/*
-    cp -R /Library/Application Support/11Cam15/7PlusBAK/* /System/Library/PrivateFramework/CMCaptureFramework.framework/D111/
+    cp -R /Library/Application Support/11Cam15/D111BAK/* /System/Library/PrivateFramework/CMCaptureFramework.framework/D111/
 
 else
     echo "Error: D111 does not exists."
@@ -14,7 +14,7 @@ if [ -d "/System/Library/PrivateFramework/CMCaptureFramework.framework/D211" ]
 then
     echo "D211 exists - iPhone 8+ Detected." 
     rm -rf /System/Library/PrivateFramework/CMCaptureFramework.framework/D211/*
-    cp -R /Library/Application Support/11Cam15/8PlusBAK/* /System/Library/PrivateFramework/CMCaptureFramework.framework/D211/
+    cp -R /Library/Application Support/11Cam15/D211BAK/* /System/Library/PrivateFramework/CMCaptureFramework.framework/D211/
 else
     echo "Error: D211 does not exists."
 fi
