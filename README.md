@@ -35,7 +35,7 @@ iPhone SE - iPhone 7 Plus, iPod 7
 Techinically Compatible with A11 iPhones, but there is a Shutter Bug
 
 ## Credits
-Flylarb & Ezekiel1998 for testing and adding features
+Thanks to Ezekiel1998 for adding many new features
 
 
 ## THINGS TO DO
