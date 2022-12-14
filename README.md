@@ -47,5 +47,5 @@ Photographic Styles (Possibly to do with Semanitic Styles)
 
 Fix the damn shutter bug on A11 devices
 
-Fix 1080p recording on A9, A10
+~~Fix 1080p recording on A9, A10~~	FIXED
 
