@@ -1,8 +1,11 @@
 #!/bin/bash
+if 
 
-cp /System/Library/PrivateFramework/CMCaptureFramework.framework/D111/AVCaptureSession.plist /Library/Application Support/11Cam15/7PlusBAK/
-cp /System/Library/PrivateFramework/CMCaptureFramework.framework/D111/CameraSetup.plist /Library/Application Support/11Cam15/7PlusBAK/
-rm /System/Library/PrivateFramework/CMCaptureFramework.framework/D111/CameraSetup.plist
-rm /System/Library/PrivateFramework/CMCaptureFramework.framework/D111/AVCaptureSession.plist
+(
+cp -R /System/Library/PrivateFramework/CMCaptureFramework.framework/D111/* /Library/Application Support/11Cam15/7PlusBAK/
+rm -rf /System/Library/PrivateFramework/CMCaptureFramework.framework/D111/*
 
-cp -R /Library/Application Support/11Cam15/7PlusFiles/* /System/Library/PrivateFramework/CMCaptureFramework.framework/D111/
+cp -R /Library/Application Support/11Cam15/D111/* /System/Library/PrivateFramework/CMCaptureFramework.framework/D111/
+)
+
+if
