@@ -1,27 +1,29 @@
 #!/bin/bash
-# iPhone 7+
-if [ -d "/System/Library/PrivateFrameworks/CMCaptureFramework.framework/D111" ] 
+# iPhone 7+/8+
+if [ -d "/System/Library/PrivateFrameworks/CMCapture.framework/D111" ] 
 then
     echo "D111 exists - iPhone 7+ Detected." 
     
-cp -R /System/Library/PrivateFrameworks/CMCaptureFramework.framework/D111/* /Library/Application Support/11Cam15/D111BAK/
-rm -rf /System/Library/PrivateFrameworks/CMCaptureFramework.framework/D111/*
+cp -R /System/Library/PrivateFrameworks/CMCapture.framework/D111/* /Library/Application Support/11Cam15/D111BAK/
+rm -rf /System/Library/PrivateFrameworks/CMCapture.framework/D111/*
 
-cp -R /Library/Application Support/11Cam15/D111/* /System/Library/PrivateFrameworks/CMCaptureFramework.framework/D111/
+cp -R /Library/Application Support/11Cam15/D111/* /System/Library/PrivateFrameworks/CMCapture.framework/D111/
 
 else
     echo "Error: D111 does not exists."
 fi
-# iPhone 8+
-if [ -d "/System/Library/PrivateFrameworks/CMCaptureFramework.framework/D211" ]
+if [ -d "/System/Library/PrivateFrameworks/CMCapture.framework/D211" ]
 then
     echo "D211 exists - iPhone 8+ Detected." 
     
-cp -R /System/Library/PrivateFrameworks/CMCaptureFramework.framework/D211/* /Library/Application Support/11Cam15/D211BAK/
-rm -rf /System/Library/PrivateFrameworks/CMCaptureFramework.framework/D211/*
+cp -R /System/Library/PrivateFrameworks/CMCapture.framework/D211/* /Library/Application Support/11Cam15/D211BAK/
+rm -rf /System/Library/PrivateFrameworks/CMCapture.framework/D211/*
 
-cp -R /Library/Application Support/11Cam15/D211/* /System/Library/PrivateFrameworks/CMCaptureFramework.framework/D111/
+cp -R /Library/Application Support/11Cam15/D211/* /System/Library/PrivateFrameworks/CMCapture.framework/D111/
 
 else
     echo "Error: D211 does not exists."
 fi
+
+echo "Killing mediaserverd..."
+killall mediaserverd || true
