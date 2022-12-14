@@ -5,7 +5,7 @@ Maintainer: Michael Melita
 Depends: mobilesubstrate, firmware (>= 15.0), firmware (<< 16.0), gsc.iphone | gsc.ipod
 Section: Tweaks
 Description: New Camera app for iOS 15
-Author: Michael Melita, Flylarb & Ezekiel1998
+Author: Michael Melita, Ezekiel1998 & Flylarb
 Name: 11Cam15-SpacialTest
 Depiction: https://michaelmelita1.github.io/depictions/?p=com.michaelmelita1.11cam15
 Sileodepiction: https://michaelmelita1.github.io/sileodepictions/com.michaelmelita1.11cam15/info.json
