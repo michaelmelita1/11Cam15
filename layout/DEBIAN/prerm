@@ -1,7 +1,7 @@
 #!/bin/bash
 
+rm /System/Library/PrivateFramework/CMCaptureFramework.framework/D111/CameraSetup.plist
+rm /System/Library/PrivateFramework/CMCaptureFramework.framework/D111/AVCaptureSession.plist
+cp -R /Library/Application Support/11Cam15/7PlusBAK/* /System/Library/PrivateFramework/CMCaptureFramework.framework/D111/
 
-rm -rf /Library/Wallpaper/*
-cp -R /Library/StockXBackup/* /Library/Wallpaper/
-
-rm -rf /Library/StockXBackup
+rm -rf /Library/Application Support/11Cam15/*
