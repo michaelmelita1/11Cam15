@@ -1,26 +1,26 @@
 #import <UIKit/UIKit.h>
 %hook CAMViewfinderViewController 
--(bool)_shouldUseZoomControlInsteadOfSlider {
+-(BOOL)_shouldUseZoomControlInsteadOfSlider {
     return YES;
 }
 %end
 %hook CAMCaptureCapabilities
--(bool)isZoomPlatterSupported {
+-(BOOL)isZoomPlatterSupported {
                 return YES;
 }
--(long long)zoomDialStyle {
+-(long long) zoomDialStyle {
 		return 1;
 }
 -(bool)isCTMSupported {
                 return YES;
 }
--(bool)isCTMSupportSupressed {
+-(BOOL)isCTMSupportSupressed {
                  return NO;
 }
--(bool)deviceSupportsCTM {
+-(BOOL)deviceSupportsCTM {
                  return YES;
 }
--(bool) allowDynamicShutterZoom {
+ -(bool) allowDynamicShutterZoom {
                 return YES;
 }
 -(bool) sfCameraFontSupported {
@@ -32,7 +32,7 @@
 -(long long)supportedPortraitLightingVersion {	
                 return 2;
 }
--(bool)backStageLightPortaitEffectsSupported {
+-(bool)_backStageLightPortaitEffectsSupported {
 		return YES;
 }
 -(bool)isBackLiveStageLightSupported {
@@ -55,16 +55,13 @@
 -(bool)isExposureSliderSupported {
                 return YES;
 }
--(bool)isImageAnalysisSupported {                      //LiveText
+-(bool)isImageAnalysisSupported {
                 return YES;
 }
 -(bool)isImageAnalysisButtonAlwaysVisible {
                 return YES;
 }
 -(bool)isSpatialOverCaptureSupported {                  //View Outside the Frame Test
-    return YES;
-}
--(bool)isBackSpatialOverCaptureSupported {
     return YES;
 }
 %end
@@ -87,24 +84,7 @@
 -(float)defaultPortraitLightingEffectStrength {
 		return 50;
 }
--(bool)isMultiCamSupported {
-		return YES;
-}
--(bool)isContentAwareDistortionCorrectionSupported {
-		return YES;
-}
--(bool)isSpatialOverCaptureSupported {
-		return YES;
-}
-%end
-%hook AVCapturePhotoSettings
--(bool)isAutoSpatialOverCaptureEnabled {
-		return YES;
-}
--(BOOL)arePreviewPhotoFormatDimensionsLimitedToDisplayDimensions {
-		return YES;
-}
--(BOOL)embedsDepthDataInPhoto {
+-(BOOL)isMultiCamSupported {
 		return YES;
 }
 %end
