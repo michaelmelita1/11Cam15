@@ -1,5 +1,33 @@
 #!/bin/bash
+#iPhone SE
+if [ -d "/System/Library/PrivateFrameworks/CMCapture.framework/N69" ] 
+then
+    echo "N69 exists - iPhone SE Detected." 
 
+mkdir "/Library/Application Support/11Cam15/N69BAK/"
+    
+cp -R /System/Library/PrivateFrameworks/CMCapture.framework/N69/AVCaptureSession.plist "/Library/Application Support/11Cam15/N69BAK/"
+rm -rf /System/Library/PrivateFrameworks/CMCapture.framework/N69/AVCaptureSession.plist
+
+cp -R "/Library/Application Support/11Cam15/N69/AVCaptureSession.plist" /System/Library/PrivateFrameworks/CMCapture.framework/N69/
+
+else
+    echo "Error: N69 does not exists."
+fi
+if [ -d "/System/Library/PrivateFrameworks/CMCapture.framework/N69u" ] 
+then
+    echo "N69u exists - iPhone SE Detected." 
+
+mkdir "/Library/Application Support/11Cam15/N69uBAK/"
+    
+cp -R /System/Library/PrivateFrameworks/CMCapture.framework/N69u/AVCaptureSession.plist "/Library/Application Support/11Cam15/N69uBAK/"
+rm -rf /System/Library/PrivateFrameworks/CMCapture.framework/N69u/AVCaptureSession.plist
+
+cp -R "/Library/Application Support/11Cam15/N69/AVCaptureSession.plist" /System/Library/PrivateFrameworks/CMCapture.framework/N69u/
+
+else
+    echo "Error: N69u does not exists."
+fi
 # iPhone 7
 if [ -d "/System/Library/PrivateFrameworks/CMCapture.framework/D101" ] 
 then
