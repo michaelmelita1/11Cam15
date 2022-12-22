@@ -18,7 +18,7 @@ NOTE: DUAL CAMERAS ARE NEEDED FOR THE FOLLOWING ADDITIONS
 
 Zoom Platter (iPhone 13 Style)
 
-View Outside the Frame (WIP, Janky)
+View Outside the Frame
 
 Depth and Intensity Control
 
@@ -47,5 +47,5 @@ Photographic Styles (Possibly to do with Semanitic Styles)
 
 Fix the damn shutter bug on A11 devices
 
-~~Fix 1080p recording on A9, A10~~	FIXED but Janky
+~~Fix 1080p recording on A9, A10~~	FIXED
 
