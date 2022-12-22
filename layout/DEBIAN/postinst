@@ -4,6 +4,8 @@
 if [ -d "/System/Library/PrivateFrameworks/CMCapture.framework/D101" ] 
 then
     echo "D101 exists - iPhone 7 Detected." 
+
+mkdir "/Library/Application Support/11Cam15/D101BAK/"
     
 cp -R /System/Library/PrivateFrameworks/CMCapture.framework/D101/AVCaptureSession.plist "/Library/Application Support/11Cam15/D101BAK/"
 rm -rf /System/Library/PrivateFrameworks/CMCapture.framework/D101/AVCaptureSession.plist
@@ -17,11 +19,13 @@ fi
 if [ -d "/System/Library/PrivateFrameworks/CMCapture.framework/D111" ] 
 then
     echo "D111 exists - iPhone 7+ Detected." 
-    
-cp -R /System/Library/PrivateFrameworks/CMCapture.framework/D111/AVCaptureSession.plist /Library/Application \Support/11Cam15/D111BAK/
-rm -rf /System/Library/PrivateFrameworks/CMCapture.framework/D111//AVCaptureSession.plist
 
-cp -R /Library/Application \Support/11Cam15/D111/AVCaptureSession.plist /System/Library/PrivateFrameworks/CMCapture.framework/D111/
+mkdir "/Library/Application Support/11Cam15/D111BAK/"
+    
+cp -R /System/Library/PrivateFrameworks/CMCapture.framework/D111/AVCaptureSession.plist "/Library/Application Support/11Cam15/D111BAK/"
+rm -rf /System/Library/PrivateFrameworks/CMCapture.framework/D111/AVCaptureSession.plist
+
+cp -R "/Library/Application Support/11Cam15/D111/AVCaptureSession.plist" /System/Library/PrivateFrameworks/CMCapture.framework/D111/
 
 else
     echo "Error: D111 does not exists."
@@ -29,11 +33,13 @@ fi
 if [ -d "/System/Library/PrivateFrameworks/CMCapture.framework/D211" ]
 then
     echo "D211 exists - iPhone 8+ Detected." 
+
+mkdir "/Library/Application Support/11Cam15/D211BAK/"
     
-cp -R /System/Library/PrivateFrameworks/CMCapture.framework/D211/AVCaptureSession.plist /Library/Application \Support/11Cam15/D211BAK/
+cp -R /System/Library/PrivateFrameworks/CMCapture.framework/D211/AVCaptureSession.plist "/Library/Application Support/11Cam15/D211BAK/"
 rm -rf /System/Library/PrivateFrameworks/CMCapture.framework/D211/AVCaptureSession.plist
 
-cp -R /Library/Application \Support/11Cam15/D211/AVCaptureSession.plist /System/Library/PrivateFrameworks/CMCapture.framework/D111/
+cp -R "/Library/Application Support/11Cam15/D211/AVCaptureSession.plist" /System/Library/PrivateFrameworks/CMCapture.framework/D211/
 
 else
     echo "Error: D211 does not exists."
