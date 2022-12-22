@@ -2,7 +2,7 @@ Package: com.michaelmelita1.11cam15
 Version: 0.0.17
 Architecture: iphoneos-arm
 Maintainer: Michael Melita
-Depends: mobilesubstrate, firmware (>= 15.0), firmware (<< 16.0)
+Depends: mobilesubstrate, firmware (>= 15.0), firmware (<< 16.0), cy+cpu.arm64
 Section: Tweaks
 Description: New Camera app for iOS 15
 Author: Michael Melita, Flylarb & Ezekiel1998
