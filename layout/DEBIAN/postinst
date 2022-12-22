@@ -1,4 +1,6 @@
 #!/bin/bash
+
+
 #iPhone SE
 if [ -d "/System/Library/PrivateFrameworks/CMCapture.framework/N69" ] 
 then
@@ -28,6 +30,8 @@ cp -R "/Library/Application Support/11Cam15/N69u/AVCaptureSession.plist" /System
 else
     echo "N69u does not exists - Not an iPhone SE."
 fi
+
+
 #iPhone 6S
 if [ -d "/System/Library/PrivateFrameworks/CMCapture.framework/N71" ] 
 then
@@ -57,6 +61,8 @@ cp -R "/Library/Application Support/11Cam15/N71m/AVCaptureSession.plist" /System
 else
     echo "N71m does not exists - Not an iPhone 6S."
 fi
+
+
 # iPhone 7
 if [ -d "/System/Library/PrivateFrameworks/CMCapture.framework/D101" ] 
 then
@@ -72,7 +78,9 @@ cp -R "/Library/Application Support/11Cam15/D101/AVCaptureSession.plist" /System
 else
     echo "D101 does not exists - Not an iPhone 7."
 fi
-# iPhone 7+/8+
+
+
+# iPhone 7+
 if [ -d "/System/Library/PrivateFrameworks/CMCapture.framework/D111" ] 
 then
     echo "D111 exists - iPhone 7+ Detected." 
@@ -87,21 +95,26 @@ cp -R "/Library/Application Support/11Cam15/D111/AVCaptureSession.plist" /System
 else
     echo "D111 does not exists - Not an iPhone 7+."
 fi
-if [ -d "/System/Library/PrivateFrameworks/CMCapture.framework/D211" ]
-then
-    echo "D211 exists - iPhone 8+ Detected." 
 
-mkdir "/Library/Application Support/11Cam15/D211BAK/"
+
+# iPhone 8+
+# if [ -d "/System/Library/PrivateFrameworks/CMCapture.framework/D211" ]
+# then
+#    echo "D211 exists - iPhone 8+ Detected." 
+
+# mkdir "/Library/Application Support/11Cam15/D211BAK/"
     
-cp -R /System/Library/PrivateFrameworks/CMCapture.framework/D211/AVCaptureSession.plist "/Library/Application Support/11Cam15/D211BAK/"
-rm -rf /System/Library/PrivateFrameworks/CMCapture.framework/D211/AVCaptureSession.plist
+# cp -R /System/Library/PrivateFrameworks/CMCapture.framework/D211/AVCaptureSession.plist "/Library/Application Support/11Cam15/D211BAK/"
+# rm -rf /System/Library/PrivateFrameworks/CMCapture.framework/D211/AVCaptureSession.plist
 
-cp -R "/Library/Application Support/11Cam15/D211/AVCaptureSession.plist" /System/Library/PrivateFrameworks/CMCapture.framework/D211/
+# cp -R "/Library/Application Support/11Cam15/D211/AVCaptureSession.plist" /System/Library/PrivateFrameworks/CMCapture.framework/D211/
 
-else
-    echo "D211 does not exists - Not an iPhone 8+."
-fi
-#iPhone SE
+# else
+#    echo "D211 does not exists - Not an iPhone 8+."
+# fi
+
+
+#iPhone X
 if [ -d "/System/Library/PrivateFrameworks/CMCapture.framework/D221" ] 
 then
     echo "D221 exists - iPhone X Detected." 
@@ -116,3 +129,5 @@ cp -R "/Library/Application Support/11Cam15/D221/AVCaptureSession.plist" /System
 else
     echo "D221 does not exists - Not an iPhone X."
 fi
+
+    echo "REBOOT REBOOT REBOOT"
