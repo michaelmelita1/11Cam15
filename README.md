@@ -49,3 +49,8 @@ Fix the damn shutter bug on A11 devices
 
 ~~Fix 1080p recording on A9, A10~~	FIXED
 
+## TO BUILD
+chmod -R 0775 postinst
+chmod -R 0775 postrm
+
+
