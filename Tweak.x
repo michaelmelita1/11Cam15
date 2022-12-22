@@ -64,6 +64,9 @@
 -(bool)isSpatialOverCaptureSupported {                  //View Outside the Frame Test
     return YES;
 }
+-(bool)isBackSpatialOverCaptureSupported {                  
+    return YES;
+}
 %end
 %hook AVCaptureDeviceFormat				//Depth Control and Intensity Control
 -(float)minSimulatedAperture {
