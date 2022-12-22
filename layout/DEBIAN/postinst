@@ -1,4 +1,18 @@
 #!/bin/bash
+
+# iPhone 7
+if [ -d "/System/Library/PrivateFrameworks/CMCapture.framework/D101" ] 
+then
+    echo "D101 exists - iPhone 7 Detected." 
+    
+cp -R /System/Library/PrivateFrameworks/CMCapture.framework/D101/AVCaptureSession.plist /Library/Application \Support/11Cam15/D101BAK/
+rm -rf /System/Library/PrivateFrameworks/CMCapture.framework/D101/AVCaptureSession.plist
+
+cp -R /Library/Application \Support/11Cam15/D101/* /System/Library/PrivateFrameworks/CMCapture.framework/D101/
+
+else
+    echo "Error: D101 does not exists."
+fi
 # iPhone 7+/8+
 if [ -d "/System/Library/PrivateFrameworks/CMCapture.framework/D111" ] 
 then
