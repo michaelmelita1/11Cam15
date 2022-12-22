@@ -1,24 +1,36 @@
 #!/bin/bash
+
+# iPhone 7
+if [ -d "/System/Library/PrivateFrameworks/CMCapture.framework/D101" ] 
+then
+    echo "D101 exists - iPhone 7 Detected." 
+    
+    rm -rf /System/Library/PrivateFrameworks/CMCapture.framework/D101/AVCaptureSession.plist
+    cp -R "/Library/Application Support/11Cam15/D101BAK/AVCaptureSession.plist" /System/Library/PrivateFrameworks/CMCapture.framework/D101/
+    
+else
+    echo "Error: D101 does not exists."
+fi
+
 # iPhone 7+/8+
 if [ -d "/System/Library/PrivateFrameworks/CMCapture.framework/D111" ] 
 then
     echo "D111 exists - iPhone 7+ Detected." 
-    rm -rf /System/Library/PrivateFrameworks/CMCapture.framework/D111/*
-    cp -R /Library/Application Support/11Cam15/D111BAK/* /System/Library/PrivateFrameworks/CMCapture.framework/D111/
-
+    
+    rm -rf /System/Library/PrivateFrameworks/CMCapture.framework/D111/AVCaptureSession.plist
+    cp -R "/Library/Application Support/11Cam15/D111BAK/AVCaptureSession.plist" /System/Library/PrivateFrameworks/CMCapture.framework/D111/
+    
 else
     echo "Error: D111 does not exists."
 fi
 if [ -d "/System/Library/PrivateFrameworks/CMCapture.framework/D211" ] 
 then
     echo "D211 exists - iPhone 8+ Detected." 
-    rm -rf /System/Library/PrivateFrameworks/CMCapture.framework/D211/*
-    cp -R /Library/Application Support/11Cam15/D211BAK/* /System/Library/PrivateFrameworks/CMCapture.framework/D211/
+
+    rm -rf /System/Library/PrivateFrameworks/CMCapture.framework/D111/AVCaptureSession.plist
+    cp -R "/Library/Application Support/11Cam15/D111BAK/AVCaptureSession.plist" /System/Library/PrivateFrameworks/CMCapture.framework/D111/
 else
     echo "Error: D211 does not exists."
 fi
 
-rm -rf /Library/Application Support/11Cam15/*
-
-echo "Killing mediaserverd..."
-killall mediaserverd || true
+rm -rf "/Library/Application Support/11Cam15/*"
