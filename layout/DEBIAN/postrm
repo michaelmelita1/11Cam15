@@ -22,7 +22,29 @@ then
 else
     echo "Error: N69u does not exists."
 fi
+# iPhone 6S
+if [ -d "/System/Library/PrivateFrameworks/CMCapture.framework/N71" ] 
+then
+    echo "N71 exists - iPhone 6S Detected." 
+    
+    rm -rf /System/Library/PrivateFrameworks/CMCapture.framework/N71/AVCaptureSession.plist
+    cp -R "/Library/Application Support/11Cam15/N71BAK/AVCaptureSession.plist" /System/Library/PrivateFrameworks/CMCapture.framework/N71/
+    rm -rf "/Library/Application Support/11Cam15/N71BAK/AVCaptureSession.plist"
 
+else
+    echo "Error: N71 does not exists."
+fi
+if [ -d "/System/Library/PrivateFrameworks/CMCapture.framework/N71m" ] 
+then
+    echo "N71m exists - iPhone 6S Detected." 
+    
+    rm -rf /System/Library/PrivateFrameworks/CMCapture.framework/N71m/AVCaptureSession.plist
+    cp -R "/Library/Application Support/11Cam15/N71mBAK/AVCaptureSession.plist" /System/Library/PrivateFrameworks/CMCapture.framework/N71m/
+    rm -rf "/Library/Application Support/11Cam15/N71mBAK/AVCaptureSession.plist"
+
+else
+    echo "Error: N71m does not exists."
+fi
 # iPhone 7
 if [ -d "/System/Library/PrivateFrameworks/CMCapture.framework/D101" ] 
 then
