@@ -98,20 +98,20 @@ fi
 
 
 # iPhone 8+
-# if [ -d "/System/Library/PrivateFrameworks/CMCapture.framework/D211" ]
-# then
-#    echo "D211 exists - iPhone 8+ Detected." 
+if [ -d "/System/Library/PrivateFrameworks/CMCapture.framework/D211" ]
+then
+  necho "D211 exists - iPhone 8+ Detected." 
 
-# mkdir "/Library/Application Support/11Cam15/D211BAK/"
+mkdir "/Library/Application Support/11Cam15/D211BAK/"
     
-# cp -R /System/Library/PrivateFrameworks/CMCapture.framework/D211/AVCaptureSession.plist "/Library/Application Support/11Cam15/D211BAK/"
-# rm -rf /System/Library/PrivateFrameworks/CMCapture.framework/D211/AVCaptureSession.plist
+cp -R /System/Library/PrivateFrameworks/CMCapture.framework/D211/AVCaptureSession.plist "/Library/Application Support/11Cam15/D211BAK/"
+rm -rf /System/Library/PrivateFrameworks/CMCapture.framework/D211/AVCaptureSession.plist
 
-# cp -R "/Library/Application Support/11Cam15/D211/AVCaptureSession.plist" /System/Library/PrivateFrameworks/CMCapture.framework/D211/
+cp -R "/Library/Application Support/11Cam15/D211/AVCaptureSession.plist" /System/Library/PrivateFrameworks/CMCapture.framework/D211/
 
-# else
-#    echo "D211 does not exists - Not an iPhone 8+."
-# fi
+else
+   echo "D211 does not exists - Not an iPhone 8+."
+fi
 
 
 #iPhone X
