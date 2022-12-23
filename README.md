@@ -24,6 +24,8 @@ Depth and Intensity Control
 
 Portrait Lighting with High Key Mono
 
+30fps Portrait viewfinder on iPhone 7 Plus
+
 ## Download from my repo
 
 https://michaelmelita1.github.io
