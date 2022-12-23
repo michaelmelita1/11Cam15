@@ -32,7 +32,7 @@ https://michaelmelita1.github.io
 
 ## Compatibility
 
-iPhone SE - iPhone 7 Plus, iPod 7
+iPhone SE - iPhone X, iPod 7
 
 Techinically Compatible with A11 iPhones, but there is a Shutter Bug
 
@@ -40,19 +40,28 @@ Techinically Compatible with A11 iPhones, but there is a Shutter Bug
 Thanks to Ezekiel1998 helping develop LiveText, SpatialOvercam, Exposure Locking and the 1080p fix
 
 Thanks to Flylarb for helping fix the zoom platter feature for iOS 15
-## THINGS TO DO
+
+## BUGS TO FIX
+
+Fix the damn shutter bug on A11 devices
+
+~~Fix 1080p recording on A9, A10~~	FIXED
+
+Fix Spatial Overcapture being zoomed out slightly
+
+
+## THINGS TO ADD
 Portrait Bokeh Editing in Photos app
 
 Live Text Detection (Instead of a constant Button)
 
 Photographic Styles (Possibly to do with Semanitic Styles)
 
-Fix the damn shutter bug on A11 devices
-
-~~Fix 1080p recording on A9, A10~~	FIXED
-
 ## TO BUILD
+
 chmod -R 0775 postinst
 chmod -R 0775 postrm
+
+make package
 
 
