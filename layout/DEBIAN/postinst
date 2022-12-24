@@ -64,6 +64,22 @@ fi
 
 
 # iPhone 7
+
+if [ -d "/System/Library/PrivateFrameworks/CMCapture.framework/D10" ] 
+then
+    echo "D10 exists - iPhone 7 Detected." 
+
+mkdir "/Library/Application Support/11Cam15/D10BAK/"
+    
+cp -R /System/Library/PrivateFrameworks/CMCapture.framework/D10/AVCaptureSession.plist "/Library/Application Support/11Cam15/D10BAK/"
+rm -rf /System/Library/PrivateFrameworks/CMCapture.framework/D10/AVCaptureSession.plist
+
+cp -R "/Library/Application Support/11Cam15/D10/AVCaptureSession.plist" /System/Library/PrivateFrameworks/CMCapture.framework/D10/
+
+else
+    echo "D101 does not exists - Not an iPhone 7."
+fi
+
 if [ -d "/System/Library/PrivateFrameworks/CMCapture.framework/D101" ] 
 then
     echo "D101 exists - iPhone 7 Detected." 
