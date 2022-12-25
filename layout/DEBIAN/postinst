@@ -63,6 +63,37 @@ else
 fi
 
 
+#iPhone 6S Plus
+if [ -d "/System/Library/PrivateFrameworks/CMCapture.framework/N66" ] 
+then
+    echo "N66 exists - iPhone 6S Plus Detected." 
+
+mkdir "/Library/Application Support/11Cam15/N66BAK/"
+    
+cp -R /System/Library/PrivateFrameworks/CMCapture.framework/N66/AVCaptureSession.plist "/Library/Application Support/11Cam15/N66BAK/"
+rm -rf /System/Library/PrivateFrameworks/CMCapture.framework/N66/AVCaptureSession.plist
+
+cp -R "/Library/Application Support/11Cam15/N66/AVCaptureSession.plist" /System/Library/PrivateFrameworks/CMCapture.framework/N66/
+
+else
+    echo "N66 does not exists - Not an iPhone 6S Plus."
+fi
+if [ -d "/System/Library/PrivateFrameworks/CMCapture.framework/N66m" ] 
+then
+    echo "N66m exists - iPhone 6S Plus Detected." 
+
+mkdir "/Library/Application Support/11Cam15/N66mBAK/"
+    
+cp -R /System/Library/PrivateFrameworks/CMCapture.framework/N66m/AVCaptureSession.plist "/Library/Application Support/11Cam15/N66mBAK/"
+rm -rf /System/Library/PrivateFrameworks/CMCapture.framework/N66m/AVCaptureSession.plist
+
+cp -R "/Library/Application Support/11Cam15/N66m/AVCaptureSession.plist" /System/Library/PrivateFrameworks/CMCapture.framework/N66m/
+
+else
+    echo "N66m does not exists - Not an iPhone 6S Plus."
+fi
+
+
 # iPhone 7
 
 if [ -d "/System/Library/PrivateFrameworks/CMCapture.framework/D10" ] 
