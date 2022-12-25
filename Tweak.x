@@ -5,7 +5,7 @@
 }
 %end
 %hook CAMCaptureCapabilities
--(BOOL)isZoomPlatterSupported {
+-(bool)isZoomPlatterSupported {
                 return YES;
 }
 -(long long) zoomDialStyle {
@@ -14,16 +14,16 @@
 -(bool)isCTMSupported {
                 return YES;
 }
--(BOOL)isCTMSupportSupressed {
+-(bool)isCTMSupportSupressed {
                  return NO;
 }
--(BOOL)deviceSupportsCTM {
+-(bool)deviceSupportsCTM {
                  return YES;
 }
- -(bool) allowDynamicShutterZoom {
+-(bool)allowDynamicShutterZoom {
                 return YES;
 }
--(bool) sfCameraFontSupported {
+-(bool)sfCameraFontSupported {
                 return YES;
 }
 -(bool)arePortraitEffectsSupported {
@@ -87,10 +87,18 @@
 -(float)defaultPortraitLightingEffectStrength {
 		return 50;
 }
--(BOOL)isMultiCamSupported {
+-(bool)isMultiCamSupported {
 		return YES;
 }
--(BOOL)isSpatialOverCaptureSupported {
+-(bool)isContentAwareDistortionCorrectionSupported {
+		return YES;
+}
+-(bool)isSpatialOverCaptureSupported {
+		return YES;
+}
+%end
+%hook AVCapturePhotoSettings
+-(bool)isAutoSpatialOverCaptureEnabled {
 		return YES;
 }
 %end
