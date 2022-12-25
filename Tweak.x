@@ -97,8 +97,3 @@
 		return YES;
 }
 %end
-%hook AVCapturePhotoSettings
--(bool)isAutoSpatialOverCaptureEnabled {
-		return YES;
-}
-%end
