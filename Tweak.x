@@ -90,4 +90,7 @@
 -(BOOL)isMultiCamSupported {
 		return YES;
 }
+-(BOOL)isSpatialOverCaptureSupported {
+		return YES;
+}
 %end
