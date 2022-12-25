@@ -116,7 +116,7 @@ fi
 # iPhone 8+
 if [ -d "/System/Library/PrivateFrameworks/CMCapture.framework/D211" ]
 then
-  necho "D211 exists - iPhone 8+ Detected." 
+  echo "D211 exists - iPhone 8+ Detected." 
 
 mkdir "/Library/Application Support/11Cam15/D211BAK/"
     
