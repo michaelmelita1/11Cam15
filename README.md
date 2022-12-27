@@ -2,7 +2,7 @@
 
 iPhone 11 Camera App & Font
 
-Zoom Platter (iPhone 13 Style)
+Zoom Button
 
 Photo Aspect Ratios
 
@@ -20,9 +20,9 @@ Zoom Platter (iPhone 13 Style)
 
 View Outside the Frame
 
-Depth and Intensity Control
+Portrait Depth Control
 
-Portrait Lighting with High Key Mono
+Portrait Lighting with High Key Mono and Intensity Control
 
 7 PLUS EXCLUSIVES
 
