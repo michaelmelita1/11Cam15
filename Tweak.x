@@ -97,3 +97,8 @@
 		return YES;
 }
 %end
+%hook AVSpatialOverCaptureVideoPreviewLayer
+-(bool)automaticallyDimsOverCaptureRegion {
+		return YES;
+}
+%end
