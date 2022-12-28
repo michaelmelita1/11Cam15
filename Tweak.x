@@ -39,6 +39,9 @@ NSInteger cameraMode;
 -(bool)isLivePhotoAutoModeSupported {
 		return YES;
 }
+-(bool)isBack4k60VideoSupported {
+                return YES;
+}
 -(bool)isExposureSliderSupported {
                 return YES;
 }
