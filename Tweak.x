@@ -91,7 +91,7 @@ NSInteger cameraMode;
 }
 -(NSArray *)_zoomFactors {
 	if (cameraMode == 0) {
-		rreturn @[@"1.05", @2, @10]; 
+		return @[@"1.05", @2, @10]; 
 	} else {
 		return %orig;
 	}
