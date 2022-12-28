@@ -1,18 +1,13 @@
 #import <UIKit/UIKit.h>
+
+@interface CAMViewfinderViewController
+- (NSInteger)_currentMode;
+@end
+NSInteger cameraMode;
+
 %hook CAMViewfinderViewController 
--(BOOL)_shouldUseZoomControlInsteadOfSlider {
+-(BOOL)_shouldUseZoomControlInsteadOfSlider { //New Camera App Code
     return YES;
-}
-%end
-%hook CAMZoomDial
--(double)minAvailableZoomFactor{
-                return 1.05;
-}
--(BOOL)hideLabels {
-                return YES;
-}
--(NSArray *)zoomFactors{
-                return [1.05,2,10];
 }
 %end
 %hook CAMCaptureCapabilities
@@ -37,7 +32,13 @@
 -(bool)sfCameraFontSupported {
                 return YES;
 }
--(bool)arePortraitEffectsSupported {
+-(bool)isLivePhotoAutoModeSupported {
+		return YES;
+}
+-(bool)isExposureSliderSupported {
+                return YES;
+}
+-(bool)arePortraitEffectsSupported {     //Portrait Lighting Code
 		return YES;
 }
 -(long long)supportedPortraitLightingVersion {	
@@ -49,43 +50,57 @@
 -(bool)isBackLiveStageLightSupported {
 		return YES;
 }
+-(bool)isPortraitEffectIntensitySupported {
+		return YES;
+}
 -(bool)isLivePreviewSupportedForLightingType:(long long)arg1 devicePosition:(long long)arg2 {
 		return YES;
 		arg1 = 1;
 		arg2 = 1;
 }
--(bool)isLivePhotoAutoModeSupported {
+-(bool)isDepthEffectApertureSupported {  //Portrait Depth Effect Code
 		return YES;
 }
--(bool)isExposureSliderSupported {
-                return YES;
-}
--(bool)isDepthEffectApertureSupported {
-		return YES;
-}
--(bool)isPortraitEffectIntensitySupported {
-		return YES;
-}
--(bool)isImageAnalysisSupported {
+-(bool)isImageAnalysisSupported {                       //Live Text Code
                 return YES;
 }
 -(bool)isImageAnalysisButtonAlwaysVisible {
                 return YES;
 }
--(bool)isSpatialOverCaptureSupported {                  //View Outside the Frame
-    return YES;
+-(bool)isSpatialOverCaptureSupported {                  //View Outside the Frame Code
+                return YES;
 }
 -(bool)isBackSpatialOverCaptureSupported {                  
-    return YES;
+                return YES;
 }
-// -(double)_forcedInitialZoomDisplayFactor {                  
-//    return 1.05;
-//}
+-(double)_forcedInitialZoomDisplayFactor {              //View Outside the Frame Fix - Janky
+	if (cameraMode == 0) {
+		return 1.05; 
+	} else {
+		return %orig;
+	}
+}
 %end
-%hook AVCaptureDeviceFormat				//Depth Control and Intensity Control
+%hook CAMZoomControl
+-(double)minimumZoomFactor {	
+	if (cameraMode == 0) {
+		return 1.05; 
+	} else {
+		return %orig;
+	}
+}
+-(NSArray *)_zoomFactors {
+	if (cameraMode == 0) {
+		rreturn @[@"1.05", @2, @10]; 
+	} else {
+		return %orig;
+	}
+}
+%end
+%hook AVCaptureDeviceFormat				//Depth Control and Intensity Control Code
 -(float)minSimulatedAperture {
 		return 1.4;
-}
+}   
 -(float)maxSimulatedAperture {
 		return 16;
 }
@@ -101,11 +116,4 @@
 -(float)defaultPortraitLightingEffectStrength {
 		return 50;
 }
--(bool)isSpatialOverCaptureSupported {
-		return YES;
-}
--(float)spatialOverCapturePercentage {
-		return 100;
-}
 %end
-
