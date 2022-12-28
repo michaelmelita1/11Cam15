@@ -4,6 +4,17 @@
     return YES;
 }
 %end
+%hook CAMZoomDial
+-(double)minAvailableZoomFactor{
+                return 1.05;
+}
+-(BOOL)hideLabels {
+                return YES;
+}
+-(NSArray *)zoomFactors{
+                return [1.05,2,10];
+}
+%end
 %hook CAMCaptureCapabilities
 -(bool)isZoomPlatterSupported {
                 return YES;
@@ -67,9 +78,9 @@
 -(bool)isBackSpatialOverCaptureSupported {                  
     return YES;
 }
--(double)_forcedInitialZoomDisplayFactor {                  
-    return 1.05;
-}
+// -(double)_forcedInitialZoomDisplayFactor {                  
+//    return 1.05;
+//}
 %end
 %hook AVCaptureDeviceFormat				//Depth Control and Intensity Control
 -(float)minSimulatedAperture {
