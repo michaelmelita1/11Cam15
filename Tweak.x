@@ -8,8 +8,11 @@
 -(bool)isZoomPlatterSupported {
                 return YES;
 }
--(long long) zoomDialStyle {
+-(long long)zoomDialStyle {
 		return 1;
+}
+-(bool)allowDynamicShutterZoom {
+                return YES;
 }
 -(bool)isCTMSupported {
                 return YES;
@@ -19,9 +22,6 @@
 }
 -(bool)deviceSupportsCTM {
                  return YES;
-}
--(bool)allowDynamicShutterZoom {
-                return YES;
 }
 -(bool)sfCameraFontSupported {
                 return YES;
@@ -46,14 +46,14 @@
 -(bool)isLivePhotoAutoModeSupported {
 		return YES;
 }
+-(bool)isExposureSliderSupported {
+                return YES;
+}
 -(bool)isDepthEffectApertureSupported {
 		return YES;
 }
 -(bool)isPortraitEffectIntensitySupported {
 		return YES;
-}
--(bool)isExposureSliderSupported {
-                return YES;
 }
 -(bool)isImageAnalysisSupported {
                 return YES;
@@ -61,11 +61,14 @@
 -(bool)isImageAnalysisButtonAlwaysVisible {
                 return YES;
 }
--(bool)isSpatialOverCaptureSupported {                  //View Outside the Frame Test
+-(bool)isSpatialOverCaptureSupported {                  //View Outside the Frame
     return YES;
 }
 -(bool)isBackSpatialOverCaptureSupported {                  
     return YES;
+}
+-(double)_forcedInitialZoomDisplayFactor {                  
+    return 1.05;
 }
 %end
 %hook AVCaptureDeviceFormat				//Depth Control and Intensity Control
@@ -87,18 +90,11 @@
 -(float)defaultPortraitLightingEffectStrength {
 		return 50;
 }
--(bool)isMultiCamSupported {
-		return YES;
-}
--(bool)isContentAwareDistortionCorrectionSupported {
-		return YES;
-}
 -(bool)isSpatialOverCaptureSupported {
 		return YES;
 }
-%end
-%hook AVSpatialOverCaptureVideoPreviewLayer
--(bool)automaticallyDimsOverCaptureRegion {
-		return YES;
+-(float)spatialOverCapturePercentage {
+		return 100;
 }
 %end
+
