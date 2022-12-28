@@ -51,7 +51,7 @@ Fix the damn shutter bug on A11 devices
 
 ~~Fix 1080p recording on A9, A10~~	FIXED
 
-Fix Spatial Overcapture being zoomed out slightly
+~~Fix Spatial Overcapture being zoomed out slightly~~ FIXED?
 
 
 ## THINGS TO ADD
@@ -59,7 +59,7 @@ Portrait Bokeh Editing in Photos app
 
 Live Text Detection (Instead of a constant Button)
 
-Photographic Styles (Possibly to do with Semanitic Styles)
+~~Photographic Styles (Possibly to do with Semanitic Styles)~~ ISP DEPENDANT, probably impossible
 
 ## TO BUILD
 
