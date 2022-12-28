@@ -3,6 +3,10 @@
 @interface CAMViewfinderViewController
 - (NSInteger)_currentMode;
 @end
+@interface CAMZoomControl : UIView
+- (id)_viewControllerForAncestor;
+- (void)setHidden:(BOOL)arg1;
+@end
 NSInteger cameraMode;
 
 %hook CAMViewfinderViewController 
@@ -81,17 +85,21 @@ NSInteger cameraMode;
 	}
 }
 %end
-%hook CAMZoomControl
+%hook CAMZoomControl							
+- (void)_configureForControlMode:(long long)arg1 zoomFactor:(double)arg2 zoomFactors:(id)arg3 displayZoomFactors:(id)arg4 zoomButtonContentType:(long long)arg5 animated:(BOOL)arg6 {
+	cameraMode = [[self _viewControllerForAncestor] _currentMode];
+[self setHidden:0];
+	switch(cameraMode) {
+   	case 0 : // Photo mode						
+		arg3 = @[@1.05, @2, @3, @10];				
+		arg4 = @[@1, @2, @3, @10];
+   	  	break;
+	}
+	%orig;	
+}
 -(double)minimumZoomFactor {	
 	if (cameraMode == 0) {
 		return 1.05; 
-	} else {
-		return %orig;
-	}
-}
--(NSArray *)_zoomFactors {
-	if (cameraMode == 0) {
-		return @[@"1.05", @2, @10]; 
 	} else {
 		return %orig;
 	}
