@@ -1,6 +1,15 @@
 #!/bin/bash
+#Tweak Stuff
+if [ -d "/System/Library/PrivateFrameworks/CMCapture.framework/N69" ] | [ -d "/System/Library/PrivateFrameworks/CMCapture.framework/N66" ] | [ -d "/System/Library/PrivateFrameworks/CMCapture.framework/N71" ] | [ -d "/System/Library/PrivateFrameworks/CMCapture.framework/D10" ] | [ -d "/System/Library/PrivateFrameworks/CMCapture.framework/D20" ]
+then
+mv /Library/MobileSubstrate/DynamicLibraries/11Cam15Dual.dylib /Library/MobileSubstrate/DynamicLibraries/11Cam15Dual.dylibbak
+mv /Library/MobileSubstrate/DynamicLibraries/11Cam15Dual.plist /Library/MobileSubstrate/DynamicLibraries/11Cam15Dual.plistbak
+else
+mv /Library/MobileSubstrate/DynamicLibraries/11Cam15Single.dylib /Library/MobileSubstrate/DynamicLibraries/11Cam15Single.dylibbak
+mv /Library/MobileSubstrate/DynamicLibraries/11Cam15Single.plist /Library/MobileSubstrate/DynamicLibraries/11Cam15Single.plistbak
+fi
 
-
+#AVCapture Stuff
 #iPhone SE
 if [ -d "/System/Library/PrivateFrameworks/CMCapture.framework/N69" ] 
 then
