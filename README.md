@@ -30,6 +30,8 @@ Portrait Lighting with High Key Mono and Intensity Control
 
 4k60fps Video
 
+1080p 240fps Slow-Mo
+
 ## Download from my repo
 
 https://michaelmelita1.github.io
