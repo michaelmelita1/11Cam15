@@ -95,7 +95,7 @@ NSInteger cameraMode;
 	switch(cameraMode) {
    	case 0 : // Photo mode						
 		arg3 = @[@1.05, @2, @10];				
-		arg4 = @[@1, @2, @10];
+		arg4 = @[@1, @2, @10];				
    	  	break;
 	}
 	%orig;	
