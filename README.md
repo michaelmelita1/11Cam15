@@ -43,9 +43,14 @@ iPhone SE - iPhone X, iPod 7
 Techinically Compatible with A11 iPhones, but there is a Shutter Bug
 
 ## Credits
-Thanks to Ezekiel1998 helping develop LiveText, SpatialOvercam, Exposure Locking and the 1080p fix
+Thanks to Ezekiel1998 for helping develop LiveText, SpatialOvercam, Exposure Locking and the 1080p fix
 
 Thanks to Flylarb for helping fix the zoom platter feature for iOS 15
+
+Thanks to Muirey03 whose tweak libMRYLIC provided the reboot code
+
+Thanks to u/lilacvibes_ whose code was used to detect camera mode
+
 
 ## BUGS TO FIX
 
