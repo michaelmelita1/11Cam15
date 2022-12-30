@@ -1,0 +1,14 @@
+#!/bin/bash
+
+function finish() {
+	f="${1}"
+	[[ -z "${f}" || -z "${CYDIA}" ]] && return
+	cydia=(${CYDIA})
+	[[ ${cydia[1]} -eq 1 ]] || return
+	echo "finish:${f}" >&${cydia[0]}
+}
+
+killall -KILL MobileGestaltHelper 2> /dev/null
+echo "11Cam15 installed. PLEASE REBOOT NOW!"
+finish reboot
+exit 0

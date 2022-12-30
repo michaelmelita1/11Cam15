@@ -116,5 +116,4 @@ fi
 
 rm -rf "/Library/Application Support/11Cam15"
 
-    echo "REBOOT REBOOT REBOOT"
-
+echo "11Cam15 uninstalled. PLEASE REBOOT NOW!"

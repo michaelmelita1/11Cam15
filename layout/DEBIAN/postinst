@@ -185,5 +185,3 @@ cp -R "/Library/Application Support/11Cam15/D221/AVCaptureSession.plist" /System
 else
     echo "D221 does not exists - Not an iPhone X."
 fi
-
-    echo "REBOOT REBOOT REBOOT"
