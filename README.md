@@ -24,13 +24,11 @@ Portrait Depth Control
 
 Portrait Lighting with High Key Mono and Intensity Control
 
-7 PLUS EXCLUSIVES
+NOTE: iPhone 7 SERIES IS NEEDED FOR THE FOLLOWING ADDITIONS
 
-30fps Portrait viewfinder
+Enables 4k60fps + 4k24fps Video
 
-4k60fps Video
-
-1080p 240fps Slow-Mo
+Enables 1080p 240fps Slow-Mo
 
 ## Download from my repo
 
