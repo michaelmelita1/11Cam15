@@ -30,9 +30,6 @@
 -(bool)isLivePhotoAutoModeSupported {
 		return YES;
 }
--(bool)isBack4k60VideoSupported {
-                return YES;
-}
 -(bool)isExposureSliderSupported {
                 return YES;
 }
@@ -40,6 +37,34 @@
                 return YES;
 }
 -(bool)isImageAnalysisButtonAlwaysVisible {
+                return YES;
+}
+// iPhone 7 and 7 Plus Feature Unlock
+
+-(bool)isBack4k60VideoSupported {
+                return YES;
+}
+-(bool)isBack1080p240Supported {                  
+                return YES;
+}
+-(bool)isBack4k24VideoSupported {                  
+                return YES;
+}
+-(bool)interactiveVideoFormatControlAlwaysEnabled {     // Force for Video Format Control Working on 4k60              
+                return YES;
+}
+%end
+%hook CAMUserPreferences   //Hook Cam User Preferences to ensure the function enabled
+-(bool)shouldUseVolumeUpBurst {
+                return YES;
+}		
+-(bool)isPhotoOverCaptureEnabled {
+                return YES;
+}
+-(bool)isOverCapturePreviewEnabled {
+                return YES;
+}
+-(bool)isImageAnalysisEnabled {
                 return YES;
 }
 %end

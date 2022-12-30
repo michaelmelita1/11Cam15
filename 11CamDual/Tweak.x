@@ -39,9 +39,6 @@ NSInteger cameraMode;
 -(bool)isLivePhotoAutoModeSupported {
 		return YES;
 }
--(bool)isBack4k60VideoSupported {
-                return YES;
-}
 -(bool)isExposureSliderSupported {
                 return YES;
 }
@@ -87,7 +84,37 @@ NSInteger cameraMode;
 		return %orig;
 	}
 }
+
+// iPhone 7 and 7 Plus Feature Unlock
+
+-(bool)isBack4k60VideoSupported {
+                return YES;
+}
+-(bool)isBack1080p240Supported {                  
+                return YES;
+}
+-(bool)isBack4k24VideoSupported {                  
+                return YES;
+}
+-(bool)interactiveVideoFormatControlAlwaysEnabled {     // Force for Video Format Control Working on 4k60              
+                return YES;
+}
 %end
+%hook CAMUserPreferences   //Hook Cam User Preferences to ensure the function enabled
+-(bool)shouldUseVolumeUpBurst {
+                return YES;
+}		
+-(bool)isPhotoOverCaptureEnabled {
+                return YES;
+}
+-(bool)isOverCapturePreviewEnabled {
+                return YES;
+}
+-(bool)isImageAnalysisEnabled {
+                return YES;
+}
+%end
+
 %hook CAMZoomControl							
 - (void)_configureForControlMode:(long long)arg1 zoomFactor:(double)arg2 zoomFactors:(id)arg3 displayZoomFactors:(id)arg4 zoomButtonContentType:(long long)arg5 animated:(BOOL)arg6 {
 	cameraMode = [[self _viewControllerForAncestor] _currentMode];
