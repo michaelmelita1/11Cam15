@@ -170,9 +170,6 @@ rm -rf /System/Library/PrivateFrameworks/CMCapture.framework/D211/AVCaptureSessi
 
 cp -R "/Library/Application Support/11Cam15/D211/AVCaptureSession.plist" /System/Library/PrivateFrameworks/CMCapture.framework/D211/
 
-mv /Library/MobileSubstrate/DynamicLibraries/11Cam15Single.dylib /Library/MobileSubstrate/DynamicLibraries/11Cam15Single.dylibbak
-mv /Library/MobileSubstrate/DynamicLibraries/11Cam15Single.plist /Library/MobileSubstrate/DynamicLibraries/11Cam15Single.plistbak
-
 else
    echo "D211 does not exists - Not an iPhone 8+."
 fi
