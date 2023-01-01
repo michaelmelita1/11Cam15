@@ -39,18 +39,7 @@
 -(bool)isImageAnalysisButtonAlwaysVisible {
                 return YES;
 }
-// iPhone 7 and 7 Plus Feature Unlock
-
--(bool)isBack4k60VideoSupported {
-                return YES;
-}
--(bool)isBack1080p240Supported {                  
-                return YES;
-}
 -(bool)isBack4k24VideoSupported {                  
-                return YES;
-}
--(bool)interactiveVideoFormatControlAlwaysEnabled {     // Force for Video Format Control Working on 4k60              
                 return YES;
 }
 %end
@@ -58,12 +47,6 @@
 -(bool)shouldUseVolumeUpBurst {
                 return YES;
 }		
--(bool)isPhotoOverCaptureEnabled {
-                return YES;
-}
--(bool)isOverCapturePreviewEnabled {
-                return YES;
-}
 -(bool)isImageAnalysisEnabled {
                 return YES;
 }

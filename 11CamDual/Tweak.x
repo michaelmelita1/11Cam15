@@ -84,19 +84,13 @@ NSInteger cameraMode;
 		return %orig;
 	}
 }
-
-// iPhone 7 and 7 Plus Feature Unlock
-
--(bool)isBack4k60VideoSupported {
+-(bool)isBack4k60VideoSupported {  // iPhone 7 and 7 Plus Feature Unlock
                 return YES;
 }
 -(bool)isBack1080p240Supported {                  
                 return YES;
 }
 -(bool)isBack4k24VideoSupported {                  
-                return YES;
-}
--(bool)interactiveVideoFormatControlAlwaysEnabled {     // Force for Video Format Control Working on 4k60              
                 return YES;
 }
 %end
