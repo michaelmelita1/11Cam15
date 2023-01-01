@@ -1,15 +1,5 @@
 #!/bin/bash
-#Tweak Stuff
-if [ -d "/System/Library/PrivateFrameworks/CMCapture.framework/N69" ] | [ -d "/System/Library/PrivateFrameworks/CMCapture.framework/N66" ] | [ -d "/System/Library/PrivateFrameworks/CMCapture.framework/N71" ] | [ -d "/System/Library/PrivateFrameworks/CMCapture.framework/D10" ] | [ -d "/System/Library/PrivateFrameworks/CMCapture.framework/D20" ]
-then
-mv /Library/MobileSubstrate/DynamicLibraries/11Cam15Dual.dylib /Library/MobileSubstrate/DynamicLibraries/11Cam15Dual.dylibbak
-mv /Library/MobileSubstrate/DynamicLibraries/11Cam15Dual.plist /Library/MobileSubstrate/DynamicLibraries/11Cam15Dual.plistbak
-else
-mv /Library/MobileSubstrate/DynamicLibraries/11Cam15Single.dylib /Library/MobileSubstrate/DynamicLibraries/11Cam15Single.dylibbak
-mv /Library/MobileSubstrate/DynamicLibraries/11Cam15Single.plist /Library/MobileSubstrate/DynamicLibraries/11Cam15Single.plistbak
-fi
 
-#AVCapture Stuff
 #iPhone SE
 if [ -d "/System/Library/PrivateFrameworks/CMCapture.framework/N69" ] 
 then
@@ -21,6 +11,9 @@ cp -R /System/Library/PrivateFrameworks/CMCapture.framework/N69/AVCaptureSession
 rm -rf /System/Library/PrivateFrameworks/CMCapture.framework/N69/AVCaptureSession.plist
 
 cp -R "/Library/Application Support/11Cam15/N69/AVCaptureSession.plist" /System/Library/PrivateFrameworks/CMCapture.framework/N69/
+
+mv /Library/MobileSubstrate/DynamicLibraries/11Cam15Dual.dylib /Library/MobileSubstrate/DynamicLibraries/11Cam15Dual.dylibbak
+mv /Library/MobileSubstrate/DynamicLibraries/11Cam15Dual.plist /Library/MobileSubstrate/DynamicLibraries/11Cam15Dual.plistbak
 
 else
     echo "N69u does not exists - Not an iPhone SE."
@@ -53,6 +46,9 @@ rm -rf /System/Library/PrivateFrameworks/CMCapture.framework/N71/AVCaptureSessio
 
 cp -R "/Library/Application Support/11Cam15/N71/AVCaptureSession.plist" /System/Library/PrivateFrameworks/CMCapture.framework/N71/
 
+mv /Library/MobileSubstrate/DynamicLibraries/11Cam15Dual.dylib /Library/MobileSubstrate/DynamicLibraries/11Cam15Dual.dylibbak
+mv /Library/MobileSubstrate/DynamicLibraries/11Cam15Dual.plist /Library/MobileSubstrate/DynamicLibraries/11Cam15Dual.plistbak
+
 else
     echo "N71 does not exists - Not an iPhone 6S."
 fi
@@ -83,6 +79,9 @@ cp -R /System/Library/PrivateFrameworks/CMCapture.framework/N66/AVCaptureSession
 rm -rf /System/Library/PrivateFrameworks/CMCapture.framework/N66/AVCaptureSession.plist
 
 cp -R "/Library/Application Support/11Cam15/N66/AVCaptureSession.plist" /System/Library/PrivateFrameworks/CMCapture.framework/N66/
+
+mv /Library/MobileSubstrate/DynamicLibraries/11Cam15Dual.dylib /Library/MobileSubstrate/DynamicLibraries/11Cam15Dual.dylibbak
+mv /Library/MobileSubstrate/DynamicLibraries/11Cam15Dual.plist /Library/MobileSubstrate/DynamicLibraries/11Cam15Dual.plistbak
 
 else
     echo "N66 does not exists - Not an iPhone 6S Plus."
@@ -116,6 +115,9 @@ rm -rf /System/Library/PrivateFrameworks/CMCapture.framework/D10/AVCaptureSessio
 
 cp -R "/Library/Application Support/11Cam15/D10/AVCaptureSession.plist" /System/Library/PrivateFrameworks/CMCapture.framework/D10/
 
+mv /Library/MobileSubstrate/DynamicLibraries/11Cam15Dual.dylib /Library/MobileSubstrate/DynamicLibraries/11Cam15Dual.dylibbak
+mv /Library/MobileSubstrate/DynamicLibraries/11Cam15Dual.plist /Library/MobileSubstrate/DynamicLibraries/11Cam15Dual.plistbak
+
 else
     echo "D101 does not exists - Not an iPhone 7."
 fi
@@ -148,6 +150,9 @@ rm -rf /System/Library/PrivateFrameworks/CMCapture.framework/D111/AVCaptureSessi
 
 cp -R "/Library/Application Support/11Cam15/D111/AVCaptureSession.plist" /System/Library/PrivateFrameworks/CMCapture.framework/D111/
 
+mv /Library/MobileSubstrate/DynamicLibraries/11Cam15Single.dylib /Library/MobileSubstrate/DynamicLibraries/11Cam15Single.dylibbak
+mv /Library/MobileSubstrate/DynamicLibraries/11Cam15Single.plist /Library/MobileSubstrate/DynamicLibraries/11Cam15Single.plistbak
+
 else
     echo "D111 does not exists - Not an iPhone 7+."
 fi
@@ -165,6 +170,9 @@ rm -rf /System/Library/PrivateFrameworks/CMCapture.framework/D211/AVCaptureSessi
 
 cp -R "/Library/Application Support/11Cam15/D211/AVCaptureSession.plist" /System/Library/PrivateFrameworks/CMCapture.framework/D211/
 
+mv /Library/MobileSubstrate/DynamicLibraries/11Cam15Single.dylib /Library/MobileSubstrate/DynamicLibraries/11Cam15Single.dylibbak
+mv /Library/MobileSubstrate/DynamicLibraries/11Cam15Single.plist /Library/MobileSubstrate/DynamicLibraries/11Cam15Single.plistbak
+
 else
    echo "D211 does not exists - Not an iPhone 8+."
 fi
@@ -181,6 +189,9 @@ cp -R /System/Library/PrivateFrameworks/CMCapture.framework/D221/AVCaptureSessio
 rm -rf /System/Library/PrivateFrameworks/CMCapture.framework/D221/AVCaptureSession.plist
 
 cp -R "/Library/Application Support/11Cam15/D221/AVCaptureSession.plist" /System/Library/PrivateFrameworks/CMCapture.framework/D221/
+
+mv /Library/MobileSubstrate/DynamicLibraries/11Cam15Single.dylib /Library/MobileSubstrate/DynamicLibraries/11Cam15Single.dylibbak
+mv /Library/MobileSubstrate/DynamicLibraries/11Cam15Single.plist /Library/MobileSubstrate/DynamicLibraries/11Cam15Single.plistbak
 
 else
     echo "D221 does not exists - Not an iPhone X."

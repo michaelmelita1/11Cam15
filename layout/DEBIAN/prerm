@@ -1,16 +1,5 @@
 #!/bin/bash
-#Tweak Stuff
-if [ -d "/System/Library/PrivateFrameworks/CMCapture.framework/N69" ] | [ -d "/System/Library/PrivateFrameworks/CMCapture.framework/N66" ] | [ -d "/System/Library/PrivateFrameworks/CMCapture.framework/N71" ] | [ -d "/System/Library/PrivateFrameworks/CMCapture.framework/D10" ] | [ -d "/System/Library/PrivateFrameworks/CMCapture.framework/D20" ]
-then
-mv /Library/MobileSubstrate/DynamicLibraries/11Cam15Dual.dylibbak /Library/MobileSubstrate/DynamicLibraries/11Cam15Dual.dylib
-mv /Library/MobileSubstrate/DynamicLibraries/11Cam15Dual.plistbak /Library/MobileSubstrate/DynamicLibraries/11Cam15Dual.plist
-else
-mv /Library/MobileSubstrate/DynamicLibraries/11Cam15Single.dylibbak /Library/MobileSubstrate/DynamicLibraries/11Cam15Single.dylib
-mv /Library/MobileSubstrate/DynamicLibraries/11Cam15Single.plistbak /Library/MobileSubstrate/DynamicLibraries/11Cam15Single.plist
-fi
 
-
-#AVCaptureStuff
 # iPhone SE
 if [ -d "/System/Library/PrivateFrameworks/CMCapture.framework/N69" ] 
 then
@@ -19,6 +8,10 @@ then
     rm -rf /System/Library/PrivateFrameworks/CMCapture.framework/N69/AVCaptureSession.plist
     cp -R "/Library/Application Support/11Cam15/N69BAK/AVCaptureSession.plist" /System/Library/PrivateFrameworks/CMCapture.framework/N69/
     rm -rf "/Library/Application Support/11Cam15/N69BAK/AVCaptureSession.plist"
+    rm -rf "/Library/Application Support/11Cam15/N69BAK/"
+
+mv /Library/MobileSubstrate/DynamicLibraries/11Cam15Dual.dylibbak /Library/MobileSubstrate/DynamicLibraries/11Cam15Dual.dylib
+mv /Library/MobileSubstrate/DynamicLibraries/11Cam15Dual.plistbak /Library/MobileSubstrate/DynamicLibraries/11Cam15Dual.plist
 
 else
     echo "Error: N69 does not exists."
@@ -30,6 +23,7 @@ then
     rm -rf /System/Library/PrivateFrameworks/CMCapture.framework/N69u/AVCaptureSession.plist
     cp -R "/Library/Application Support/11Cam15/N69uBAK/AVCaptureSession.plist" /System/Library/PrivateFrameworks/CMCapture.framework/N69u/
     rm -rf "/Library/Application Support/11Cam15/N69uBAK/AVCaptureSession.plist"
+    rm -rf "/Library/Application Support/11Cam15/N69uBAK/"
 
 else
     echo "Error: N69u does not exists."
@@ -42,6 +36,10 @@ then
     rm -rf /System/Library/PrivateFrameworks/CMCapture.framework/N71/AVCaptureSession.plist
     cp -R "/Library/Application Support/11Cam15/N71BAK/AVCaptureSession.plist" /System/Library/PrivateFrameworks/CMCapture.framework/N71/
     rm -rf "/Library/Application Support/11Cam15/N71BAK/AVCaptureSession.plist"
+    rm -rf "/Library/Application Support/11Cam15/N71BAK/"
+
+mv /Library/MobileSubstrate/DynamicLibraries/11Cam15Dual.dylibbak /Library/MobileSubstrate/DynamicLibraries/11Cam15Dual.dylib
+mv /Library/MobileSubstrate/DynamicLibraries/11Cam15Dual.plistbak /Library/MobileSubstrate/DynamicLibraries/11Cam15Dual.plist
 
 else
     echo "Error: N71 does not exists."
@@ -53,6 +51,7 @@ then
     rm -rf /System/Library/PrivateFrameworks/CMCapture.framework/N71m/AVCaptureSession.plist
     cp -R "/Library/Application Support/11Cam15/N71mBAK/AVCaptureSession.plist" /System/Library/PrivateFrameworks/CMCapture.framework/N71m/
     rm -rf "/Library/Application Support/11Cam15/N71mBAK/AVCaptureSession.plist"
+    rm -rf "/Library/Application Support/11Cam15/N71mBAK/"
 
 else
     echo "Error: N71m does not exists."
@@ -65,6 +64,11 @@ then
     rm -rf /System/Library/PrivateFrameworks/CMCapture.framework/D10/AVCaptureSession.plist
     cp -R "/Library/Application Support/11Cam15/D10BAK/AVCaptureSession.plist" /System/Library/PrivateFrameworks/CMCapture.framework/D10/
     rm -rf "/Library/Application Support/11Cam15/D10BAK/AVCaptureSession.plist"
+    rm -rf "/Library/Application Support/11Cam15/D10BAK/"
+
+mv /Library/MobileSubstrate/DynamicLibraries/11Cam15Dual.dylibbak /Library/MobileSubstrate/DynamicLibraries/11Cam15Dual.dylib
+mv /Library/MobileSubstrate/DynamicLibraries/11Cam15Dual.plistbak /Library/MobileSubstrate/DynamicLibraries/11Cam15Dual.plist
+
 else
     echo "Error: D10 does not exists."
 fi
@@ -75,6 +79,7 @@ then
     rm -rf /System/Library/PrivateFrameworks/CMCapture.framework/D101/AVCaptureSession.plist
     cp -R "/Library/Application Support/11Cam15/D101BAK/AVCaptureSession.plist" /System/Library/PrivateFrameworks/CMCapture.framework/D101/
     rm -rf "/Library/Application Support/11Cam15/D101BAK/AVCaptureSession.plist"
+    rm -rf "/Library/Application Support/11Cam15/D101BAK/"
 else
     echo "Error: D101 does not exists."
 fi
@@ -87,7 +92,11 @@ then
     rm -rf /System/Library/PrivateFrameworks/CMCapture.framework/D111/AVCaptureSession.plist
     cp -R "/Library/Application Support/11Cam15/D111BAK/AVCaptureSession.plist" /System/Library/PrivateFrameworks/CMCapture.framework/D111/
     rm -rf "/Library/Application Support/11Cam15/D111BAK/AVCaptureSession.plist"
+    rm -rf "/Library/Application Support/11Cam15/D111BAK/"
     
+mv /Library/MobileSubstrate/DynamicLibraries/11Cam15Single.dylibbak /Library/MobileSubstrate/DynamicLibraries/11Cam15Single.dylib
+mv /Library/MobileSubstrate/DynamicLibraries/11Cam15Single.plistbak /Library/MobileSubstrate/DynamicLibraries/11Cam15Single.plist
+
 else
     echo "Error: D111 does not exists."
 fi
@@ -99,6 +108,11 @@ then
    rm -rf /System/Library/PrivateFrameworks/CMCapture.framework/D211/AVCaptureSession.plist
    cp -R "/Library/Application Support/11Cam15/D211BAK/AVCaptureSession.plist" /System/Library/PrivateFrameworks/CMCapture.framework/D211/
    rm -rf "/Library/Application Support/11Cam15/D211BAK/AVCaptureSession.plist"
+   rm -rf "/Library/Application Support/11Cam15/D211BAK/"
+
+mv /Library/MobileSubstrate/DynamicLibraries/11Cam15Single.dylibbak /Library/MobileSubstrate/DynamicLibraries/11Cam15Single.dylib
+mv /Library/MobileSubstrate/DynamicLibraries/11Cam15Single.plistbak /Library/MobileSubstrate/DynamicLibraries/11Cam15Single.plist
+
 else
    echo "Error: D211 does not exists."
 fi
@@ -110,10 +124,15 @@ then
     rm -rf /System/Library/PrivateFrameworks/CMCapture.framework/D221/AVCaptureSession.plist
     cp -R "/Library/Application Support/11Cam15/D221BAK/AVCaptureSession.plist" /System/Library/PrivateFrameworks/CMCapture.framework/D221/
     rm -rf "/Library/Application Support/11Cam15/D221BAK/AVCaptureSession.plist"
+    rm -rf "/Library/Application Support/11Cam15/D221BAK/"
+
+mv /Library/MobileSubstrate/DynamicLibraries/11Cam15Single.dylibbak /Library/MobileSubstrate/DynamicLibraries/11Cam15Single.dylib
+mv /Library/MobileSubstrate/DynamicLibraries/11Cam15Single.plistbak /Library/MobileSubstrate/DynamicLibraries/11Cam15Single.plist
+
 else
     echo "Error: D221 does not exists."
 fi
 
-rm -rf "/Library/Application Support/11Cam15"
+rm -rf "/Library/Application Support/11Cam15/*"
 
 echo "11Cam15 uninstalled. PLEASE REBOOT NOW!"
