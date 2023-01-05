@@ -135,4 +135,8 @@ fi
 
 rm -rf "/Library/Application Support/11Cam15/*"
 
-echo "11Cam15 uninstalled. PLEASE REBOOT NOW!"
+echo "Flushing camera formats..."
+rm -f /var/mobile/Library/Preferences/com.apple.celestial.plist
+
+echo "Killing mediaserverd..."
+killall mediaserverd || true
