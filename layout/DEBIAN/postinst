@@ -193,3 +193,9 @@ mv /Library/MobileSubstrate/DynamicLibraries/11Cam15Single.plist /Library/Mobile
 else
     echo "D221 does not exists - Not an iPhone X."
 fi
+
+echo "Flushing camera formats..."
+rm -f /var/mobile/Library/Preferences/com.apple.celestial.plist
+
+echo "Killing mediaserverd..."
+killall mediaserverd || true
