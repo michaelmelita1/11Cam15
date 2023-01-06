@@ -18,21 +18,20 @@ extern "C" bool MGGetBoolAnswer(CFStringRef);
     "fYsrGTmVTbneEs3HKetEdQ": "FrontFacingCameraSingleCameraPortrait",
     "g/MkWm2Ac6+TLNBgtBGxsg": "HEVCEncodingCapability",
     "hewg+QX1h57eGJGphdCong": "DeviceSupportsPortraitLightEffectFilters",
-   "ik8OQ5JoYhyK8AoTx29MuA": "DeviceSupportsOnDemandPhotoAnalysis",
+   "ik8OQ5JoYhyK8AoTx29MuA": "DeviceSupportsOnDemandPhotoAnalysis",  TRIED
     "IMUksyctl4kC/BFI2K/Qyw": "DeviceSupportsStageLightPortraitPreview",
     "jaJWtlotaa+Y41lCs7NVHg": "RearFacingLowLightCameraCapability",
     "jBGZJ71pRJrqD8VZ6Tk2VQ": "RearFacingCameraVideoCapture1080pMaxFPS",
     "L8CqbJeM+rf7l7NSOjnAHg": "DeviceSupportsPortraitIntensityAdjustments",
     "Lcu6Zck+C/+AMO8qULacDw": "DeviceSupportsToneMapping",
-    "NszbG6qiAztVal4mpDQRkg": "CameraAppUIVersion",
+    "NszbG6qiAztVal4mpDQRkg": "CameraAppUIVersion", TRIED
     "oLjiDs+BWEdMVbjE0x6cnw": "DeviceSupportsStudioLightPortraitPreview",
     "po7g0ATDzGoVI1DO8ISmuw": "RearFacingCameraVideoCapture4kMaxFPS",
-    "PpmzzBVLpZVubmP0tCIymg": "WirelessChargingCapability",
     "pQzfsK0Ado+nkNFgPRIA8Q": "DeviceSupportsLivePhotoAuto",
     "RLlZndRrTB3oIDuZEihtpQ": "RearFacingCameraAutoHDRCapability",
-    "SjQQ07G8UacM7E69G7dPbg": "DeviceSupportsSpatialOverCapture",
+    "SjQQ07G8UacM7E69G7dPbg": "DeviceSupportsSpatialOverCapture", TRIED
     "sQwlfROu8fcD1Qwm8YJVeg": "DeviceSupportsReverseZoom",
-    "WXi7NQbOKnEX4vPQFeZAdQ": "DeviceSupportsSiriBargeIn",
+    "WXi7NQbOKnEX4vPQFeZAdQ": "DeviceSupportsSiriBargeIn", TRIED
     "XIcF5FOyQlt/H79oFw9ciA": "PipelinedStillImageProcessingCapability",
     "yZf3GTRMGTuwSV/lD7Cagw": "DeviceSupportsTapToWake"
     "YlK+0xmxNWhNn/+r8SM8kA": "DeviceSupportsStereoAudioRecording",
