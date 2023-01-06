@@ -64,7 +64,7 @@ Portrait Bokeh Editing in Photos app
 
 Live Text Detection (Instead of a constant Button)
 
-~~Photographic Styles (Possibly to do with Semanitic Styles)~~ ISP DEPENDANT, probably impossible
+Make rootless by breaking AVCapture Dependancy
 
 ## TO BUILD
 
