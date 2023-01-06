@@ -45,7 +45,7 @@ Thanks to Ezekiel1998 for helping develop LiveText, SpatialOvercam, Exposure Loc
 
 Thanks to Flylarb for helping fix the zoom platter feature for iOS 15
 
-Thanks to Muirey03 whose tweak libMRYLIC provided the reboot code
+Thanks to Poomsmart whose tweak 60fps provided the cache refresh code
 
 Thanks to u/lilacvibes_ whose code was used to detect camera mode
 
