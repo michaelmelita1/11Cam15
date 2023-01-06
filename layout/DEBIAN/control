@@ -1,5 +1,5 @@
-Package: com.michaelmelita1.11cam15
-Version: 0.0.17
+Package: com.michaelmelita1.11cam15rootless
+Version: 0.0.18
 Architecture: iphoneos-arm
 Maintainer: Michael Melita
 Depends: mobilesubstrate, firmware (>= 15.0), firmware (<< 16.0), cy+cpu.arm64
