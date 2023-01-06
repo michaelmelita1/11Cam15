@@ -136,7 +136,7 @@ fi
 rm -rf "/Library/Application Support/11Cam15/*"
 
 echo "Flushing camera formats..."
-rm -f /var/mobile/Library/Preferences/com.apple.celestial.plist
+rm -f /var/mobile/Library/Preferences/com.apple.cameracapture.volatile.plist
 
 echo "Killing mediaserverd..."
 killall mediaserverd || true
