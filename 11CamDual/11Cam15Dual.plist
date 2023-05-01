@@ -1,6 +1,0 @@
-{
-  Filter = {
-    Bundles = ( "com.apple.camera", "com.apple.Preferences" );
-    Executables = ( "mediaserverd" );
-  };
-}
