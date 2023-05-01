@@ -1,4 +1,4 @@
-# 11Cam15
+# 11Cam15 Rootless
 
 iPhone 11 Camera App & Font
 
@@ -18,17 +18,9 @@ NOTE: DUAL CAMERAS ARE NEEDED FOR THE FOLLOWING ADDITIONS
 
 Zoom Platter (iPhone 13 Style)
 
-View Outside the Frame
-
 Portrait Depth Control
 
 Portrait Lighting with High Key Mono and Intensity Control
-
-NOTE: iPhone 7 SERIES IS NEEDED FOR THE FOLLOWING ADDITIONS
-
-Enables 4k60fps + 4k24fps Video
-
-Enables 1080p 240fps Slow-Mo
 
 ## Download from my repo
 
@@ -67,9 +59,6 @@ Live Text Detection (Instead of a constant Button)
 ~~Photographic Styles (Possibly to do with Semanitic Styles)~~ ISP DEPENDANT, probably impossible
 
 ## TO BUILD
-
-chmod -R 0775 postinst
-chmod -R 0775 postrm
 
 make package
 
