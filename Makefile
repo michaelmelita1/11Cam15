@@ -1,7 +1,7 @@
 FINALPACKAGE=1
 THEOS_PACKAGE_SCHEME=rootless
 ARCHS = arm64
-TARGET = iphone:14.5
+TARGET = iphone:clang:latest
 INSTALL_TARGET_PROCESSES = Camera
 
 include $(THEOS)/makefiles/common.mk
