@@ -23,9 +23,9 @@ Portrait Depth Control (f/1.4 – f/16)
 
 Portrait Lighting with High Key Mono, Intensity Control and live Stage Light preview
 
-View Outside the Frame
 
-## Experimental (separate builds)
+
+## Experiments to Test
 
 Live Text (button always visible; reads text from the captured frame)
 
@@ -33,9 +33,13 @@ Auto Low Light FPS (Settings → Camera → Record Video, shows with a 30 fps fo
 
 Stereo Audio Recording
 
+Auto HDR, iPhone 8 style (iPhone 7 only)
+
+(iPhone 7+, 8+, X)
+
 Live Studio / Contour / Stage Light preview in Portrait
 
-Auto HDR, iPhone 8 style (iPhone 7 only)
+View Outside the Frame (iPhone 7+, 8+, X)
 
 ## Download from my repo
 
