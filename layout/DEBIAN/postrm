@@ -1,0 +1,12 @@
+#!/bin/sh
+# Only on uninstall: on an upgrade the new version's postinst takes over.
+case "$1" in
+remove|purge)
+	# The daemon keeps its parsed (patched) camera plists in this preferences file.
+	# Delete it, and restart cfprefsd so it doesn't hand back its in-memory copy.
+	rm -f /var/mobile/Library/Preferences/com.apple.cameracapture.volatile.plist
+	killall -9 cfprefsd 2>/dev/null
+	killall -9 mediaserverd cameracaptured Camera 2>/dev/null
+	;;
+esac
+exit 0

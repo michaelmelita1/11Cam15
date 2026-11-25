@@ -1,0 +1,6 @@
+#!/bin/sh
+# Restart the camera daemon and the Camera app so they load the new tweak.
+# (The daemon clears its cached plist data itself when the tweak loads.)
+# cameracaptured is the camera daemon's name on newer iOS versions; it isn't there on iOS 15.
+killall -9 mediaserverd cameracaptured Camera 2>/dev/null
+exit 0
