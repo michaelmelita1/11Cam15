@@ -1,3 +1,5 @@
+#import <AVFoundation/AVFoundation.h>
+#import <CoreMedia/CoreMedia.h>
 // 11Cam: iPhone 11-style Camera app and features for older iPhones (iOS 15/16).
 //
 // How it works (from reading the iOS 16 CameraUI, AVFCapture and CMCapture code):
@@ -8,7 +10,8 @@
 //    initializer runs, we change a few AVGestalt answers, so CameraUI derives the
 //    whole new UI consistently by itself (QuickTake, SF camera font, aspect ratios,
 //    exposure slider, control drawer, Live Text, Depth Control, ...). Outside that
-//    initializer AVGestalt is untouched, so AVFoundation's own behaviour is Apple's.
+//    initializer AVGestalt is untouched, so AVFoundation's own behaviour is Apple's
+//    (Settings is the exception: its Camera pane also asks AVGestalt directly).
 //
 // 2. Camera daemon (mediaserverd)
 //    The daemon reads <model>/AVCaptureSession.plist and <model>/CameraSetup.plist
@@ -17,10 +20,17 @@
 //    AVCaptureSession.plist in com.apple.cameracapture.volatile -> CaptureSourceInfo,
 //    so that cache is cleared at daemon start, otherwise the plist is never re-read.
 //
-// Deliberately NOT enabled: responsive shutter, capture-on-touch-down, deferred
-// processing, Deep Fusion, Photographic Styles. The daemon formats on A9-A11 phones
-// don't declare support for them, and turning them on in the UI only would make
-// the Camera app ask for captures the daemon can't deliver.
+//    A10 and older: the new UI's crop preview needs 4:2:0 frames that HD video's
+//    stabilisation path doesn't deliver; a converter is added to the daemon's capture
+//    graph in front of the preview stitcher (see "Daemon side: preview stitcher").
+//
+// 3. Live Text: VisionKit decides once per process that it needs a Neural Engine; see
+//    EnableLiveText. On these phones text is read from a captured frame (the button
+//    stays visible), not detected live in the viewfinder.
+//
+// Deliberately NOT enabled: automatic Live Photos and live text detection (need a Neural
+// Engine), capture-on-touch-down (no effect with QuickTake), responsive shutter, Smart HDR,
+// Night mode, Deep Fusion, Photographic Styles (need A12+ hardware and processing).
 
 #import <Foundation/Foundation.h>
 #import <CoreFoundation/CoreFoundation.h>
@@ -83,7 +93,7 @@ static BOOL OrigBool(NSString *q) {
 	return orig_AVGestaltGetBoolAnswer ? orig_AVGestaltGetBoolAnswer((__bridge CFStringRef)q) : NO;
 }
 
-static BOOL HasDualBackCamera(void) {
+__attribute__((unused)) static BOOL HasDualBackCamera(void) {
 	return OrigBool(@"AVGQDeviceHasAggregateCamera") && OrigBool(@"AVGQRearFacingTelephotoCameraCapability");
 }
 
@@ -96,11 +106,9 @@ static NSDictionary<NSString *, NSNumber *> *BoolOverrides(void) {
 		// The new Camera UI. In CameraUI this one answer becomes deviceSupportsCTM, which
 		// drives QuickTake, the SF camera font, the over-content flip button, the control
 		// drawer, aspect-ratio crop, the CTM mode selector and dynamic shutter zoom.
-#ifndef NO_QUICKTAKE // diagnostic build: `make package NOQUICKTAKE=1`
 		o[@"AVGQDeviceSupportsMomentCapture"] = @YES;
 		// Exposure slider (needs the CTM UI above).
 		o[@"AVGQDeviceSupportsExposureBiasWithoutExposureLock"] = @YES;
-#endif
 		// CameraUI enables Live Text (imageAnalysis) and Depth Control
 		// (depthEffectAperture) from this answer.
 		o[@"AVGQHasAppleNeuralEngine"] = @YES;
@@ -116,11 +124,7 @@ static NSDictionary<NSString *, NSNumber *> *BoolOverrides(void) {
 		if (rearPortrait) o[@"AVGQRearFacingCameraStageLightPortraitCaptureCapability"] = @YES;
 		if (frontPortrait) o[@"AVGQFrontFacingCameraStageLightPortraitCaptureCapability"] = @YES;
 
-		// View Outside the Frame, only on dual-camera phones; the daemon side adds the
-		// matching format keys (see PatchCaptureSession).
-		if (HasDualBackCamera()) o[@"AVGQDeviceSupportsSpatialOverCapture"] = @YES;
-
-		// ---- Experiments (`make package EXP="LOWLIGHT STEREO LIGHTINGPREVIEW MODERNHDR LIVETEXT"`) ----
+		// ---- Experiments (`make package EXP="LOWLIGHT STEREO LIGHTINGPREVIEW OVERCAPTURE"`) ----
 #ifdef EXP_LOWLIGHT
 		// Auto low-light FPS for 30 fps video (Settings > Camera > Record Video). The daemon
 		// side adds LowLightVideoCaptureSupported/LowLightVideoAEMaxGain to the formats.
@@ -129,13 +133,13 @@ static NSDictionary<NSString *, NSNumber *> *BoolOverrides(void) {
 #ifdef EXP_STEREO
 		// Stereo audio in video (XR and later). The daemon side marks the microphone as
 		// stereo-capable; Apple's dev switch is CAMFeatureDevelopmentAllowStereoAudioRecording.
-		o[@"AVGQDeviceSupportsStereoAudioRecording"] = @YES;
+		// Not on A10 and older: the iPhone 7 only fills both channels with the same mono signal.
+		if (!IsA10OrOlder()) o[@"AVGQDeviceSupportsStereoAudioRecording"] = @YES;
 #endif
-#ifdef EXP_MODERNHDR
-		// "Modern" HDR (iPhone 8/X): HDR done in the GNR fusion step, with the Auto HDR switch
-		// in Settings. The daemon side marks the iPhone 7's photo formats GNRHDRSupported and
-		// gives its sensor the X's local-tone-mapping HDR tuning.
-		if (IsA10iPhone()) o[@"AVGQCameraHDR2Capability"] = @YES;
+#ifdef EXP_OVERCAPTURE
+		// View Outside the Frame, only on dual-camera phones; the daemon side adds the
+		// matching format keys (see PatchExperiments). Untested on a 7 Plus / 8 Plus / X.
+		if (HasDualBackCamera()) o[@"AVGQDeviceSupportsSpatialOverCapture"] = @YES;
 #endif
 #ifdef EXP_LIGHTINGPREVIEW
 		// Live Studio/Contour Light preview in Portrait (Stage is above). The daemon side
@@ -158,9 +162,6 @@ static NSDictionary<NSString *, NSNumber *> *IntegerOverrides(void) {
 			// Matches the formats the daemon side un-hides on iPhone 7 / 7 Plus.
 			o[@"AVGQRearFacingCameraVideoCapture4kMaxFPS"] = @60;
 			o[@"AVGQRearFacingCameraHFRVideoCapture1080pMaxFPS"] = @240;
-#ifdef EXP_MODERNHDR
-			o[@"AVGQCameraHDRVersion"] = @2;
-#endif
 		}
 		overrides = [o copy];
 	});
@@ -222,13 +223,13 @@ static void SetBoolIvar(id obj, const char *name, BOOL value) {
 @interface CAMViewfinderViewController : NSObject // UIViewController; declared minimally so UIKit stays out of the daemon
 @end
 
-#ifdef EXP_LIVETEXT
 // Live Text. CameraUI shows the Live Text button from AVGQHasAppleNeuralEngine (above), but
 // VisionKit makes its own decision once per process, in a private dispatch_once that checks for
 // a Neural Engine, and caches the answer in a private global. +[VKImageAnalyzer
 // deviceSupportsImageAnalysis] is a single branch to vk_imageAnalysisSupportedAndSettingsSwitchEnabled,
 // whose first byte-load (adrp + ldrb) reads that cached global. After the once has run, set it to YES.
 // Text recognition itself then runs without the Neural Engine (VisionKit's own "no ANE" path).
+static BOOL sLiveTextPatched; // VisionKit needed the change (no usable Neural Engine)
 static void EnableLiveText(void) {
 	static BOOL done;
 	if (done) return;
@@ -252,16 +253,16 @@ static void EnableLiveText(void) {
 		if (imm & (1 << 20)) imm -= (1 << 21);
 		uint8_t *flag = (uint8_t *)((((uintptr_t)&fn[k]) & ~(uintptr_t)0xfff) + (imm << 12) + ((b >> 10) & 0xfff));
 		*flag = 1;
+		sLiveTextPatched = YES;
 		BOOL after = ((BOOL (*)(id, SEL))objc_msgSend)(analyzer, sel);
 		LOG("live text: VisionKit support flag set, deviceSupportsImageAnalysis %d -> %d", before, after);
 #ifdef DIAG_LOG
-		DiagLog(@"EXP livetext: VisionKit deviceSupportsImageAnalysis %d -> %d (the second value also needs Live Text switched on in Settings > General > Language & Region)", before, after);
+		DiagLog(@"livetext: VisionKit deviceSupportsImageAnalysis %d -> %d (the second value also needs Live Text switched on in Settings > General > Language & Region)", before, after);
 #endif
 		return;
 	}
 	LOG("live text: flag not found, leaving it");
 }
-#endif
 
 %group Capabilities
 %hook CAMCaptureCapabilities
@@ -272,28 +273,20 @@ static void EnableLiveText(void) {
 	// iPhone 11-style zoom dial. CameraUI only enables it with an ultra-wide camera.
 	// (Its style, zoomDialStyle, already follows the new UI once QuickTake is on.)
 	if (me) SetBoolIvar(me, "_zoomPlatterSupported", YES);
-#ifdef EXP_LIVETEXT
 	if ([[[NSProcessInfo processInfo] processName] isEqualToString:@"Camera"]) EnableLiveText();
 	// Live text detection in the viewfinder needs the Neural Engine, but Live Text on a captured
-	// frame works. Keep the Live Text button visible so it can always be tapped (A10 and older).
-	if (me && IsA10OrOlder()) SetBoolIvar(me, "_imageAnalysisButtonAlwaysVisible", YES);
-#endif
+	// frame works. Keep the Live Text button visible so it can always be tapped.
+	if (me && sLiveTextPatched) SetBoolIvar(me, "_imageAnalysisButtonAlwaysVisible", YES);
 #ifdef EXP_LOWLIGHT
 	if (me) SetBoolIvar(me, "_autoLowLightVideoSupported", YES);
 #endif
 #ifdef EXP_STEREO
 	// CameraUI only allows stereo for some host processes; Settings may not be one of them.
-	if (me) SetBoolIvar(me, "_stereoAudioRecordingSupported", YES);
-#endif
-#ifdef DIAG_NO_FORMAT_CONTROL // diagnostic build: in-viewfinder HD/4K + fps switches off
-	if (me) SetBoolIvar(me, "_interactiveVideoFormatControlAlwaysEnabled", NO);
+	if (me && !IsA10OrOlder()) SetBoolIvar(me, "_stereoAudioRecordingSupported", YES);
 #endif
 #ifdef DIAG_LOG
 	DiagLog(@"CAMCaptureCapabilities initWithHostProcess:%lld", hostProcess);
 	if (me) DiagLogCapabilities(me);
-#endif
-#ifdef DIAG_NO_SHUTTER_ZOOM // diagnostic build: drag-to-zoom shutter off
-	if (me) SetBoolIvar(me, "_allowDynamicShutterZoom", NO);
 #endif
 	return me;
 }
@@ -363,26 +356,34 @@ static id V(id obj, NSString *key) {
 #pragma mark - Diagnostic logging (only in `make package DIAG=DIAG_LOG`)
 
 #ifdef DIAG_LOG
-// Writes to /var/mobile/Media/11Cam-diag.txt and, as a fallback in case the Camera
-// sandbox refuses that, <Camera data container>/Documents/11Cam-diag.txt.
-#ifdef NO_QUICKTAKE
-#define DIAG_FILE @"11Cam-diag-noquicktake.txt"
-#else
+// Camera writes 11Cam-diag.txt to every writable folder of a list (in practice
+// /var/mobile/Library/Caches/com.apple.camera), Settings 11Cam-settings-diag.txt and the
+// camera daemon 11Cam-daemon-diag.txt.
 #define DIAG_FILE @"11Cam-diag.txt"
-#endif
 static NSMutableArray<NSString *> *sDiagPaths;   // files we can write
 static NSMutableArray<NSString *> *sDiagTried;   // every path tried, with the result
 static NSMutableString *sDiagBuffer;             // the whole log, so a late-found location gets everything
 static dispatch_queue_t sDiagQueue;
 
 // Try to create `path`; if it works, write the whole log so far and keep appending to it.
+static NSMutableSet *sDiagRealPaths;
 static void DiagTryPath(NSString *path) {
 	dispatch_async(sDiagQueue, ^{
 		if (!path || [sDiagPaths containsObject:path]) return;
-		NSError *err = nil;
-		BOOL ok = [sDiagBuffer writeToFile:path atomically:NO encoding:NSUTF8StringEncoding error:&err];
+		// /tmp is a link to /var/tmp: don't open the same file twice.
+		NSString *real = [[[path stringByDeletingLastPathComponent] stringByResolvingSymlinksInPath] stringByAppendingPathComponent:path.lastPathComponent];
+		if (!sDiagRealPaths) sDiagRealPaths = [NSMutableSet set];
+		if ([sDiagRealPaths containsObject:real]) { [sDiagTried addObject:[NSString stringWithFormat:@"%@=same file", path]]; return; }
+		// Append to the existing log so a daemon restart (or crash) keeps the earlier sessions; start over only past 4 MB.
+		NSFileManager *fm = [NSFileManager defaultManager];
+		NSDictionary *attrs = [fm attributesOfItemAtPath:path error:NULL];
+		if (attrs && [attrs fileSize] > 4 * 1024 * 1024) [fm removeItemAtPath:path error:NULL];
+		BOOL ok = NO; NSError *err = nil;
+		if (![fm fileExistsAtPath:path]) ok = [@"" writeToFile:path atomically:NO encoding:NSUTF8StringEncoding error:&err];
+		NSFileHandle *h = [NSFileHandle fileHandleForWritingAtPath:path];
+		if (h) { [h seekToEndOfFile]; [h writeData:[[@"\n" stringByAppendingString:sDiagBuffer] dataUsingEncoding:NSUTF8StringEncoding]]; [h closeFile]; ok = YES; }
 		[sDiagTried addObject:[NSString stringWithFormat:@"%@=%@", path, ok ? @"ok" : (err.localizedDescription ?: @"failed")]];
-		if (ok) [sDiagPaths addObject:path];
+		if (ok) { [sDiagPaths addObject:path]; [sDiagRealPaths addObject:real]; }
 	});
 }
 
@@ -411,80 +412,18 @@ static id SafeValue(id obj, NSString *key) {
 	@try { return [obj valueForKey:key]; } @catch (NSException *e) { return nil; }
 }
 
-// Every BOOL / number / string property of obj (all classes up to NSObject).
-static NSString *PropertyDump(id obj) {
-	if (!obj) return @"";
-	NSMutableDictionary *d = [NSMutableDictionary dictionary];
-	for (Class c = object_getClass(obj); c && c != [NSObject class]; c = class_getSuperclass(c)) {
-		unsigned n = 0;
-		objc_property_t *props = class_copyPropertyList(c, &n);
-		for (unsigned i = 0; i < n; i++) {
-			NSString *name = @(property_getName(props[i]));
-			if (d[name] || [name hasPrefix:@"_"] || [name isEqualToString:@"description"] || [name isEqualToString:@"debugDescription"] || [name isEqualToString:@"hash"]) continue;
-			char *type = property_copyAttributeValue(props[i], "T");
-			BOOL simple = type && (strchr("cBiIsSlLqQfd", type[0]) || !strcmp(type, "@\"NSString\"") || !strcmp(type, "@\"NSNumber\""));
-			char *getter = property_copyAttributeValue(props[i], "G");
-			SEL sel = getter ? sel_registerName(getter) : NSSelectorFromString(name);
-			free(type); free(getter);
-			if (!simple || ![obj respondsToSelector:sel]) continue;
-			id v = SafeValue(obj, name);
-			if (v) d[name] = v;
-		}
-		free(props);
-	}
-	NSMutableString *s = [NSMutableString string];
-	for (NSString *k in [[d allKeys] sortedArrayUsingSelector:@selector(compare:)]) [s appendFormat:@" %@=%@", k, d[k]];
-	return s;
-}
-
-// Every instance variable of obj (numbers/BOOLs as values, objects as short descriptions).
-static NSString *IvarDump(id obj, int depth) {
-	if (!obj) return @"";
-	NSMutableString *s = [NSMutableString string];
-	for (Class c = object_getClass(obj); c && c != [NSObject class]; c = class_getSuperclass(c)) {
-		unsigned n = 0;
-		Ivar *ivars = class_copyIvarList(c, &n);
-		for (unsigned i = 0; i < n; i++) {
-			const char *name = ivar_getName(ivars[i]), *type = ivar_getTypeEncoding(ivars[i]);
-			if (!name || !type) continue;
-			uint8_t *p = (uint8_t *)(__bridge void *)obj + ivar_getOffset(ivars[i]);
-			switch (type[0]) {
-				case 'c': case 'B': [s appendFormat:@" %s=%d", name, *(int8_t *)p]; break;
-				case 'i': case 'I': [s appendFormat:@" %s=%d", name, *(int32_t *)p]; break;
-				case 'q': case 'Q': case 'l': case 'L': [s appendFormat:@" %s=%lld", name, *(long long *)p]; break;
-				case 'f': [s appendFormat:@" %s=%g", name, *(float *)p]; break;
-				case 'd': [s appendFormat:@" %s=%g", name, *(double *)p]; break;
-				case '@': {
-					id v = object_getIvar(obj, ivars[i]);
-					if (!v) break;
-					NSString *cls = NSStringFromClass([v class]);
-					// Recurse one level into AVFoundation's private "internal" objects.
-					if (depth == 0 && [cls hasSuffix:@"Internal"]) { [s appendFormat:@"\n      [%s %@]%@", name, cls, IvarDump(v, 1)]; break; }
-					NSString *desc = nil;
-					if ([v isKindOfClass:[NSNumber class]] || [v isKindOfClass:[NSString class]] || [v isKindOfClass:[NSArray class]] || [v isKindOfClass:[NSDictionary class]] || [v isKindOfClass:[NSSet class]])
-						desc = [[[v description] componentsSeparatedByCharactersInSet:[NSCharacterSet newlineCharacterSet]] componentsJoinedByString:@" "];
-					else desc = cls;
-					if (desc.length > 400) desc = [[desc substringToIndex:400] stringByAppendingString:@"..."];
-					[s appendFormat:@" %s=%@", name, desc];
-					break;
-				}
-				default: break;
-			}
-		}
-		free(ivars);
-	}
-	return s;
-}
-
 static NSString *SessionSnapshot(id session) {
 	NSMutableString *s = [NSMutableString string];
 	[s appendFormat:@"preset=%@ running=%@ interrupted=%@", SafeValue(session, @"sessionPreset"), SafeValue(session, @"running"), SafeValue(session, @"interrupted")];
 	for (id input in SafeValue(session, @"inputs") ?: @[]) {
 		id dev = SafeValue(input, @"device");
 		if (!dev) { [s appendFormat:@"\n    input %@", NSStringFromClass([input class])]; continue; }
-		[s appendFormat:@"\n    input %@ activeFormat=%@ minFrameDuration=%@ maxFrameDuration=%@ stabilization? zoom=%@",
+		CMTime mn = kCMTimeInvalid, mx = kCMTimeInvalid;
+		if ([dev respondsToSelector:@selector(activeVideoMinFrameDuration)]) { mn = [dev activeVideoMinFrameDuration]; mx = [dev activeVideoMaxFrameDuration]; }
+		[s appendFormat:@"\n    input %@ activeFormat=%@ fps=%.2f-%.2f zoom=%@",
 			SafeValue(dev, @"localizedName"), SafeValue(dev, @"activeFormat"),
-			SafeValue(dev, @"activeVideoMinFrameDuration"), SafeValue(dev, @"activeVideoMaxFrameDuration"),
+			CMTIME_IS_VALID(mx) && CMTimeGetSeconds(mx) > 0 ? 1.0 / CMTimeGetSeconds(mx) : 0.0,
+			CMTIME_IS_VALID(mn) && CMTimeGetSeconds(mn) > 0 ? 1.0 / CMTimeGetSeconds(mn) : 0.0,
 			SafeValue(dev, @"videoZoomFactor")];
 	}
 	for (id output in SafeValue(session, @"outputs") ?: @[]) {
@@ -508,79 +447,100 @@ static void DiagLogCapabilities(id caps) {
 	NSMutableString *s = [NSMutableString stringWithString:@"CAMCaptureCapabilities:"];
 	for (NSString *iv in @[@"_ctmSupported", @"_deviceSupportsCTM", @"_ctmSupportSuppressed", @"_allowControlDrawer", @"_allowDynamicShutterZoom",
 	                       @"_interactiveVideoFormatControlSupported", @"_interactiveVideoFormatControlAlwaysEnabled", @"_exposureSliderSupported",
-	                       @"_captureOnTouchDown", @"_autoLowLightVideoSupported", @"_stereoAudioRecordingSupported", @"_livePhotoAutoModeSupported",
-	                       @"_backLiveStageLightSupported", @"_frontLiveStageLightSupported", @"_imageAnalysisSupported", @"_imageAnalysisButtonAlwaysVisible", @"_backHDRSupported", @"_backAutomaticHDRSupported", @"_modernHDRSupported", @"_HDRSettingAllowed",
-	                       @"_livePhotoAutoModeSupported", @"_imageAnalysisSupported", @"_sfCameraFontSupported", @"_zoomPlatterSupported",
-	                       @"_responsiveShutterSupported", @"_shotBufferSupported", @"_back4k60VideoSupported", @"_back1080p240Supported"]) {
+	                       @"_autoLowLightVideoSupported", @"_stereoAudioRecordingSupported", @"_backLiveStageLightSupported", @"_frontLiveStageLightSupported",
+	                       @"_imageAnalysisSupported", @"_imageAnalysisButtonAlwaysVisible", @"_backHDRSupported", @"_backAutomaticHDRSupported",
+	                       @"_modernHDRSupported", @"_HDRSettingAllowed", @"_sfCameraFontSupported", @"_zoomPlatterSupported"]) {
 		Ivar v = class_getInstanceVariable(object_getClass(caps), iv.UTF8String);
 		if (v) [s appendFormat:@" %@=%d", [iv substringFromIndex:1], *(BOOL *)((uint8_t *)(__bridge void *)caps + ivar_getOffset(v))];
 	}
 	DiagLog(@"%@", s);
 }
 
+// Analyse a finished recording: video size / frame rate / frame-duration spread (low-light FPS, 4K60, 240 fps) and
+// audio channels / format (stereo).
+static void AnalyseMovie(NSURL *url) {
+	if (!url) return;
+	AVURLAsset *asset = [AVURLAsset URLAssetWithURL:url options:nil];
+	NSMutableString *s = [NSMutableString stringWithFormat:@"EXP recording: %@ duration=%.2fs", url.lastPathComponent, CMTimeGetSeconds(asset.duration)];
+	for (AVAssetTrack *t in [asset tracksWithMediaType:AVMediaTypeVideo]) {
+		[s appendFormat:@" | video %.0fx%.0f nominalFPS=%.2f minFrameDuration=%.4f", t.naturalSize.width, t.naturalSize.height, t.nominalFrameRate, CMTimeGetSeconds(t.minFrameDuration)];
+		NSError *err = nil;
+		AVAssetReader *r = [AVAssetReader assetReaderWithAsset:asset error:&err];
+		AVAssetReaderTrackOutput *o = [AVAssetReaderTrackOutput assetReaderTrackOutputWithTrack:t outputSettings:nil];
+		o.alwaysCopiesSampleData = NO;
+		if (r && [r canAddOutput:o]) {
+			[r addOutput:o];
+			if ([r startReading]) {
+				int n = 0; double mind = 1e9, maxd = 0, sum = 0; CMSampleBufferRef sb;
+				NSMutableDictionary *hist = [NSMutableDictionary dictionary];
+				while ((sb = [o copyNextSampleBuffer])) {
+					double d = CMTimeGetSeconds(CMSampleBufferGetDuration(sb));
+					if (d > 0) { n++; sum += d; if (d < mind) mind = d; if (d > maxd) maxd = d;
+						NSNumber *fps = @(lround(1.0 / d)); hist[fps] = @([hist[fps] intValue] + 1); }
+					CFRelease(sb);
+				}
+				[s appendFormat:@" frames=%d avgFPS=%.2f fastest=%.2ffps slowest=%.2ffps fpsHistogram=%@", n, n && sum > 0 ? n / sum : 0, maxd > 0 ? 1 / mind : 0, maxd > 0 ? 1 / maxd : 0,
+					[[hist description] stringByReplacingOccurrencesOfString:@"\n" withString:@""]];
+			}
+			[r cancelReading];
+		}
+	}
+	for (AVAssetTrack *t in [asset tracksWithMediaType:AVMediaTypeAudio]) {
+		for (id fd in t.formatDescriptions) {
+			const AudioStreamBasicDescription *a = CMAudioFormatDescriptionGetStreamBasicDescription((__bridge CMAudioFormatDescriptionRef)fd);
+			size_t ls = 0; const AudioChannelLayout *lay = CMAudioFormatDescriptionGetChannelLayout((__bridge CMAudioFormatDescriptionRef)fd, &ls);
+			if (a) [s appendFormat:@" | audio %u ch %.0f Hz format '%c%c%c%c' layoutTag=0x%x", (unsigned)a->mChannelsPerFrame, a->mSampleRate,
+				(char)(a->mFormatID >> 24), (char)(a->mFormatID >> 16), (char)(a->mFormatID >> 8), (char)a->mFormatID, lay ? (unsigned)lay->mChannelLayoutTag : 0];
+		}
+	}
+	DiagLog(@"%@", s);
+}
+
+static void HookRecordingDelegate(id delegate) {
+	static NSMutableSet *done;
+	if (!delegate) return;
+	if (!done) done = [NSMutableSet set];
+	Class c = object_getClass(delegate);
+	SEL sel = @selector(captureOutput:didFinishRecordingToOutputFileAtURL:fromConnections:error:);
+	if ([done containsObject:NSStringFromClass(c)]) return;
+	[done addObject:NSStringFromClass(c)];
+	Method m = class_getInstanceMethod(c, sel);
+	if (!m) { DiagLog(@"EXP recording: delegate %@ has no finish callback", NSStringFromClass(c)); return; }
+	__block IMP orig = NULL;
+	IMP repl = imp_implementationWithBlock(^(id me, id output, NSURL *url, NSArray *conns, NSError *error) {
+		DiagLog(@"EXP recording: finished %@ error=%@", url.path, error);
+		AnalyseMovie(url);
+		((void (*)(id, SEL, id, NSURL *, NSArray *, NSError *))orig)(me, sel, output, url, conns, error);
+	});
+	orig = method_setImplementation(m, repl);
+	DiagLog(@"EXP recording: watching %@ for finished recordings", NSStringFromClass(c));
+}
+
 %group Diag
 @interface VKCaptureTextAnalysisRequest : NSObject
 @end
-// Experiment checks: Live Text.
+// Live Text checks.
 %hook VKCaptureTextAnalysisRequest
 - (id)initWithImage:(id)image focusQuad:(id)quad delegate:(id)delegate {
-	DiagLog(@"EXP livetext: Camera started a text analysis request (delegate %@)", NSStringFromClass([delegate class]));
+	DiagLog(@"livetext: Camera started a text analysis request (delegate %@)", NSStringFromClass([delegate class]));
 	return %orig;
 }
 %end
 %hook CAMViewfinderViewController
 - (BOOL)_shouldShowImageAnalysisButtonForGraphConfiguration:(id)configuration {
 	BOOL r = %orig;
-	DiagLog(@"EXP livetext: show Live Text button = %d", r);
+	DiagLog(@"livetext: show Live Text button = %d", r);
 	return r;
 }
 - (void)_updateTextAnalysisWithInsert:(id)insert instructions:(BOOL)instructions animated:(BOOL)animated {
-	DiagLog(@"EXP livetext: text detection result %@", insert ? @"FOUND TEXT" : @"none");
+	DiagLog(@"livetext: text detection result %@", insert ? @"FOUND TEXT" : @"none");
 	%orig;
 }
 %end
 %hook AVCaptureSession
 - (void)commitConfiguration {
 	%orig;
-	NSMutableString *dump = [NSMutableString stringWithFormat:@"commitConfiguration: %@\n  SESSION%@", SessionSnapshot(self), PropertyDump(self)];
-	for (id input in SafeValue(self, @"inputs") ?: @[]) {
-		id dev = SafeValue(input, @"device");
-		[dump appendFormat:@"\n  INPUT %@%@", NSStringFromClass([input class]), PropertyDump(input)];
-		if (dev) [dump appendFormat:@"\n  DEVICE %@%@", SafeValue(dev, @"localizedName"), PropertyDump(dev)];
-	}
-	for (id output in SafeValue(self, @"outputs") ?: @[]) {
-		[dump appendFormat:@"\n  OUTPUT %@%@", NSStringFromClass([output class]), PropertyDump(output)];
-		for (id conn in SafeValue(output, @"connections") ?: @[]) [dump appendFormat:@"\n    CONNECTION%@", PropertyDump(conn)];
-	}
-	NSString *preset = SafeValue(self, @"sessionPreset");
-	if ([preset isEqualToString:@"AVCaptureSessionPresetHigh"] || [preset isEqualToString:@"AVCaptureSessionPresetHigh60"] || [preset isEqualToString:@"AVCaptureSessionPreset1920x1080"]) {
-		for (id output in SafeValue(self, @"outputs") ?: @[]) {
-			[dump appendFormat:@"\n  PRIVATE %@%@", NSStringFromClass([output class]), IvarDump(output, 0)];
-			if ([output respondsToSelector:NSSelectorFromString(@"metadataObjectTypes")]) [dump appendFormat:@"\n  METADATA TYPES %@", SafeValue(output, @"metadataObjectTypes")];
-			if ([output respondsToSelector:NSSelectorFromString(@"preparedPhotoSettingsArray")]) [dump appendFormat:@"\n  PREPARED %@", SafeValue(output, @"preparedPhotoSettingsArray")];
-			if ([output respondsToSelector:NSSelectorFromString(@"photoSettingsForSceneMonitoring")]) [dump appendFormat:@"\n  SCENE MONITORING %@", IvarDump(SafeValue(output, @"photoSettingsForSceneMonitoring"), 0)];
-			if ([output respondsToSelector:NSSelectorFromString(@"isDigitalFlashCaptureEnabled")]) [dump appendFormat:@"\n  DIGITAL FLASH ENABLED %@", SafeValue(output, @"digitalFlashCaptureEnabled")];
-			if ([output respondsToSelector:@selector(outputSettingsForConnection:)]) {
-				for (id conn in SafeValue(output, @"connections") ?: @[]) {
-					@try { [dump appendFormat:@"\n  MOVIE SETTINGS %@", ((id (*)(id, SEL, id))objc_msgSend)(output, @selector(outputSettingsForConnection:), conn)]; } @catch (NSException *e) {}
-				}
-			}
-		}
-		for (id input in SafeValue(self, @"inputs") ?: @[]) {
-			id dev = SafeValue(input, @"device");
-			if (dev) [dump appendFormat:@"\n  PRIVATE DEVICE %@%@", SafeValue(dev, @"localizedName"), IvarDump(dev, 0)];
-		}
-		[dump appendFormat:@"\n  PRIVATE SESSION%@", IvarDump(self, 0)];
-		// Every connection in the session, including the viewfinder's preview layer.
-		int i = 0;
-		for (id conn in SafeValue(self, @"connections") ?: @[]) {
-			i++;
-			[dump appendFormat:@"\n  SESSIONCONN %d%@\n    PRIVATECONN%@", i, PropertyDump(conn), IvarDump(conn, 0)];
-			id layer = SafeValue(conn, @"videoPreviewLayer");
-			if (layer) [dump appendFormat:@"\n  PREVIEWLAYER %d%@\n    PRIVATELAYER%@", i, PropertyDump(layer), IvarDump(layer, 0)];
-		}
-	}
-	DiagLog(@"%@", [[dump componentsSeparatedByString:@"\n"] componentsJoinedByString:@"\n"]);
+	DiagLog(@"commitConfiguration: %@", SessionSnapshot(self));
 }
 - (void)startRunning {
 	DiagLog(@"startRunning");
@@ -592,22 +552,14 @@ static void DiagLogCapabilities(id caps) {
 }
 %end
 
-%hook AVCapturePhotoOutput
-- (void)setPhotoSettingsForSceneMonitoring:(id)settings {
-	DiagLog(@"setPhotoSettingsForSceneMonitoring: %@", settings);
-	%orig;
-}
-- (void)setDigitalFlashMode:(long long)mode {
-	DiagLog(@"photoOutput setDigitalFlashMode:%lld", mode);
-	%orig;
-}
-%end
-
 %hook AVCaptureMovieFileOutput
 - (void)startRecordingToOutputFileURL:(NSURL *)url recordingDelegate:(id)delegate {
 	DiagLog(@"movie startRecording: %@", url.path);
-	DiagTryPath([[url.path stringByDeletingLastPathComponent] stringByAppendingPathComponent:DIAG_FILE]);
-	dispatch_async(sDiagQueue, ^{ DiagLog(@"log locations tried: %@", [sDiagTried componentsJoinedByString:@" | "]); });
+	for (AVCaptureConnection *c in [(AVCaptureMovieFileOutput *)self connections])
+		for (AVCaptureInputPort *port in c.inputPorts)
+			if ([port.mediaType isEqualToString:AVMediaTypeAudio])
+				DiagLog(@"EXP stereo: client audio output settings %@", [[[(AVCaptureMovieFileOutput *)self outputSettingsForConnection:c] description] stringByReplacingOccurrencesOfString:@"\n" withString:@" "]);
+	HookRecordingDelegate(delegate);
 	%orig;
 }
 - (void)stopRecording {
@@ -627,10 +579,8 @@ static void DiagInstall(void) {
 		return;
 	}
 	if ([[[NSProcessInfo processInfo] processName] isEqualToString:@"Camera"]) {
-		NSString *home = NSHomeDirectory();
-		DiagStart_(DIAG_FILE, @[@"/var/mobile/Media", [home stringByAppendingPathComponent:@"Documents"], NSTemporaryDirectory(),
-		                        [home stringByAppendingPathComponent:@"Library/Caches"], @"/var/mobile/Library/Caches/com.apple.camera",
-		                        @"/var/mobile/Media/PhotoData", @"/var/mobile/Media/DCIM", @"/var/tmp"]);
+		// The Camera sandbox allows these (not /var/mobile/Media or Documents).
+		DiagStart_(DIAG_FILE, @[@"/var/mobile/Library/Caches/com.apple.camera", NSTemporaryDirectory(), @"/var/tmp"]);
 		for (NSString *name in @[@"AVCaptureSessionRuntimeErrorNotification", @"AVCaptureSessionWasInterruptedNotification",
 		                         @"AVCaptureSessionInterruptionEndedNotification", @"AVCaptureSessionDidStartRunningNotification",
 		                         @"AVCaptureSessionDidStopRunningNotification"]) {
@@ -728,9 +678,40 @@ static int sGraphDumpsOK, sGraphDumpsFailed;
 %hook BWAudioSourceNode
 - (void)setStereoAudioCaptureEnabled:(BOOL)e { DiagLog(@"EXP stereo: audio source node stereo = %d", e); %orig; }
 %end
+@interface BWAudioFormat : NSObject
+@end
+%hook BWAudioFormat
++ (id)formatForAVAudioSettings:(id)settings inputFormat:(CMFormatDescriptionRef)input {
+	id r = %orig;
+	const AudioStreamBasicDescription *a = input ? CMAudioFormatDescriptionGetStreamBasicDescription(input) : NULL;
+	DiagLog(@"EXP stereo: encoder format for input %u ch -> %@", a ? (unsigned)a->mChannelsPerFrame : 0, [[r description] stringByReplacingOccurrencesOfString:@"\n" withString:@" "]);
+	return r;
+}
+%end
 %hook BWStreamingFilterNode
 - (void)setStudioAndContourRenderingEnabled:(BOOL)e { DiagLog(@"EXP lightingpreview: live Studio/Contour rendering = %d", e); %orig; }
 - (void)setStageRenderingEnabled:(BOOL)e { DiagLog(@"EXP lightingpreview: live Stage rendering = %d", e); %orig; }
+- (void)changeToFilters:(id)filters animated:(BOOL)animated {
+	DiagLog(@"EXP lightingpreview: change to filters %@", [[filters description] stringByReplacingOccurrencesOfString:@"\n" withString:@" "]);
+	%orig;
+}
+- (void)setPortraitLightingEffectStrength:(float)strength {
+	DiagLog(@"EXP lightingpreview: lighting effect strength %.2f", strength);
+	%orig;
+}
+- (void)renderSampleBuffer:(CMSampleBufferRef)sbuf forInput:(id)input {
+	static unsigned long n;
+	%orig;
+	if (n++ % 150 == 0) {
+		id me = (id)self;
+		id f = [me respondsToSelector:@selector(filters)] ? ((id (*)(id, SEL))objc_msgSend)(me, @selector(filters)) : nil;
+		DiagLog(@"EXP lightingpreview: filter node rendered %lu frames, active filters: %@", n, [[f description] stringByReplacingOccurrencesOfString:@"\n" withString:@" "]);
+	}
+}
+- (void)handleNodeError:(id)error forInput:(id)input {
+	DiagLog(@"EXP lightingpreview: filter node error %@", error);
+	%orig;
+}
 %end
 %hook BWGraph
 - (BOOL)_resolveFormats:(id *)error {
@@ -833,6 +814,7 @@ static void PatchCaptureSession(NSMutableDictionary *plist) {
 		}
 	}
 
+#ifdef EXP_OVERCAPTURE
 	// View Outside the Frame on dual-camera phones. On the 11 Pro this is declared on
 	// the multi-camera devices' 12MP and 1080p30 formats, plus
 	// ConfigureForSpatialOverCaptureSupport on the main camera's 1080p30.
@@ -851,14 +833,9 @@ static void PatchCaptureSession(NSMutableDictionary *plist) {
 		}
 		LOG("added View Outside the Frame keys to the dual camera");
 	}
+#endif
 #if defined(EXP_LOWLIGHT) || defined(EXP_STEREO) || defined(EXP_LIGHTINGPREVIEW)
 	PatchExperiments(devices);
-#endif
-#ifdef EXP_MODERNHDR
-	if (IsA10iPhone()) {
-		for (NSString *name in @[@"12MP", @"Square"]) Dict(wideFormats[name])[@"GNRHDRSupported"] = @YES;
-		LOG("experiment: GNR HDR on the back camera's photo formats");
-	}
 #endif
 }
 
@@ -884,7 +861,7 @@ static void PatchExperiments(NSMutableArray *devices) {
 #endif
 #ifdef EXP_STEREO
 	NSMutableDictionary *mic = DeviceWithUniqueIDSuffix(devices, @"built-in_audio:0");
-	if (mic) { mic[@"stereoAudioCaptureSupported"] = @YES; LOG("experiment: stereo audio key added"); }
+	if (mic && !IsA10OrOlder()) { mic[@"stereoAudioCaptureSupported"] = @YES; LOG("experiment: stereo audio key added"); }
 #endif
 #ifdef EXP_LIGHTINGPREVIEW
 	// Portrait devices: the dual camera's 12MP and the TrueDepth camera's 7MP/12MP formats.
@@ -902,29 +879,12 @@ static void PatchExperiments(NSMutableArray *devices) {
 }
 #endif
 
-#ifdef EXP_MODERNHDR
-// iPhone X back camera (sensor 0x0343) GNR LTMHDRParameters {Fusion, NoiseModel}, from iOS 16.7.16 CameraSetup.plist.
-static NSString *const kXLTMHDRParameters = @"YnBsaXN0MDDSAQIDeVZGdXNpb25aTm9pc2VNb2RlbNwEBQYHCAkKCwwNDg8Qb3BxcnN0dXZ3d3hVQmFuZHNfEB1CbGFja1N1YnRyYWN0aW9uQ2xpcHBpbmdSYXRpb18QGEJsYWNrU3VidHJhY3Rpb25Mb3dMaW1pdF8QFkRldGFpbEVuaGFuY2VMZWZ0TGltaXRfEBdEZXRhaWxFbmhhbmNlUmlnaHRMaW1pdF8QFURldGFpbEVuaGFuY2VTdHJlbmd0aF8QFEVWUENocm9tYVdlaWdodEJvb3N0XxATRml4UHlyYW1pZEFsaWdubWVudF8QEkdyYXlHaG9zdGluZ0N1dG9mZl8QJUdyYXlHaG9zdGluZ0VWMEVWTURpZmZlcmVuY2VUaHJlc2hvbGRfEB5HcmF5R2hvc3RpbmdFVjBXZWlnaHRUaHJlc2hvbGRfEBdNYXhpbXVtQ29udHJhc3RTdHJlbmd0aKQRN05f1hITFBUWFxgdIScsMVxBZGFwdGl2ZUJsdXJeQmxhY2tUaHJlc2hvbGRfEBRDaHJvbWFGdXNpb25TdHJlbmd0aFpEaWZmV2VpZ2h0XxASTHVtYUZ1c2lvblN0cmVuZ3RoWlNoYXJwZW5pbmekGRobHCM/7gQYk3S8aiM/7MzMzMzMzSNADgAAAAAAACM/4AAAAAAAAKQeHyAfI0ASwo9cKPXDIz/TMzMzMzMzI0Aiwo9cKPXD0iIjJCZfEBREZW5zZUZyYW1lUGFyYW1ldGVyc18QFVNwYXJzZUZyYW1lUGFyYW1ldGVyc6IlJSM/8AAAAAAAAKIlJdIiIygrpCUpKiUjQAAAAAAAAAAjQBAAAAAAAACkJSkqJdIiIy0vpCUlLiUjQGQAAAAAAACmJTAbMC4wI0AIAAAAAAAAqDIzNDU2NS41Iz/uBBigAAAAIz/0zMy/////I0AiAAAAAAAAIz/xmZmgAAAAI0BCwAAAAAAA1hITFBUWFzg6PUJGTKQZJRs5Iz/pmZmZmZmapiU7PDsuOyM/wzMzMzMzMyNAFAAAAAAAANIiIz4/oiUcpBlAIEEjP+XCj1wo9cMjP+Cj1wo9cKTSIiNDRKQlKSolpBlFICUjQAwAAAAAAADSIiNHSKIlHKYySUpLLksjP+XCj2AAAAAjQCLCj2AAAAAjP+Cj1wAAAACmMk0bJS4lIz/wzMy/////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";
-#endif
 
 static void PatchCameraSetup(NSMutableDictionary *plist) {
 	// Depth Control and Portrait Lighting strength are tuning parameters. On the
 	// iPhone X the synthetic lens model (SLM) has a 0-0 aperture range and there are
 	// no PortraitLightingParameters; the 11 Pro uses f/1.4-f/16 and 0-1.
 	NSMutableDictionary *tuning = Dict(plist[@"TuningParameters"]);
-#ifdef EXP_MODERNHDR
-	if (IsA10iPhone()) {
-		NSData *data = [[NSData alloc] initWithBase64EncodedString:kXLTMHDRParameters options:0];
-		NSDictionary *ltm = data ? [NSPropertyListSerialization propertyListWithData:data options:NSPropertyListMutableContainersAndLeaves format:NULL error:NULL] : nil;
-		[Dict(tuning[@"PortTypeBack"]) enumerateKeysAndObjectsUsingBlock:^(id sensorID, id sensor, BOOL *stop) {
-			NSMutableDictionary *gnr = Dict(Dict(sensor)[@"GNRParameters"]);
-			if (!gnr || !ltm) return;
-			if (!Dict(gnr[@"Fusion"])[@"LTMHDRParameters"]) Dict(gnr[@"Fusion"])[@"LTMHDRParameters"] = [ltm[@"Fusion"] mutableCopy];
-			if (!Dict(gnr[@"NoiseModel"])[@"LTMHDRParameters"]) Dict(gnr[@"NoiseModel"])[@"LTMHDRParameters"] = [ltm[@"NoiseModel"] mutableCopy];
-			LOG("experiment: added LTM HDR tuning for back sensor %{public}@", sensorID);
-		}];
-	}
-#endif
 	[tuning enumerateKeysAndObjectsUsingBlock:^(NSString *port, id portDict, BOOL *stop) {
 		if (![port hasPrefix:@"PortType"] || !Dict(portDict)) return;
 		[(NSDictionary *)portDict enumerateKeysAndObjectsUsingBlock:^(id sensorID, id sensor, BOOL *stop2) {
@@ -986,6 +946,7 @@ static CFPropertyListRef hook_FigCaptureCFCreatePropertyListForModel(CFStringRef
 // Apple uses elsewhere in these graphs) in front of it, with no fixed output format. It passes buffers
 // straight through when they're already acceptable, so photo, 4K and everything else that
 // already worked is unchanged.
+
 @interface BWPixelTransferNode : NSObject
 @end
 
@@ -1030,6 +991,40 @@ static CFPropertyListRef hook_FigCaptureCFCreatePropertyListForModel(CFStringRef
 %end
 %end
 
+
+// Stereo audio: the microphone source switches to 2 channels, but the movie file's audio
+// settings (from the Camera app) still ask the AAC encoder for 1 channel, so the file ends up
+// mono. When stereo capture was requested, ask the encoder for 2 channels with a stereo layout.
+static BOOL sStereoRequested;
+%group StereoDaemon
+%hook FigAudioCaptureConnectionConfiguration
+- (void)setBuiltInMicrophoneStereoAudioCaptureEnabled:(BOOL)e {
+	sStereoRequested = e;
+	%orig;
+}
+%end
+%hook FigCaptureMovieFileRecordingSettings
+- (void)setAudioSettings:(NSDictionary *)settings {
+	NSDictionary *use = settings;
+	if (sStereoRequested && [settings isKindOfClass:[NSDictionary class]] && [settings[AVNumberOfChannelsKey] intValue] == 1) {
+		NSMutableDictionary *m = [settings mutableCopy];
+		m[AVNumberOfChannelsKey] = @2;
+		AudioChannelLayout layout = { .mChannelLayoutTag = kAudioChannelLayoutTag_Stereo };
+		m[AVChannelLayoutKey] = [NSData dataWithBytes:&layout length:sizeof(layout)];
+		if ([m[AVEncoderBitRateKey] intValue] > 0 && [m[AVEncoderBitRateKey] intValue] < 128000) m[AVEncoderBitRateKey] = @([m[AVEncoderBitRateKey] intValue] * 2);
+		use = m;
+		LOG("stereo: movie audio settings 1 -> 2 channels");
+	}
+#ifdef DIAG_LOG
+	DiagLog(@"EXP stereo: movie audio settings from client %@ -> using %@ (stereo requested %d)",
+	        [[settings description] stringByReplacingOccurrencesOfString:@"\n" withString:@" "],
+	        use == settings ? @"unchanged" : [[use description] stringByReplacingOccurrencesOfString:@"\n" withString:@" "], sStereoRequested);
+#endif
+	%orig(use);
+}
+%end
+%end
+
 static BOOL sDaemonHooked;
 
 static void HookDaemonIfReady(void) {
@@ -1042,6 +1037,12 @@ static void HookDaemonIfReady(void) {
 	if (createForModel) MSHookFunction(createForModel, (void *)hook_FigCaptureCFCreatePropertyListForModel, (void **)&orig_FigCaptureCFCreatePropertyListForModel);
 	LOG("daemon hooks installed (%d/%d)", create != NULL, createForModel != NULL);
 	if (IsA10OrOlder() && objc_getClass("BWGraph")) %init(DaemonGraph);
+#ifdef EXP_STEREO
+	const BOOL stereo = YES;
+#else
+	const BOOL stereo = NO;
+#endif
+	if (stereo && !IsA10OrOlder() && objc_getClass("FigCaptureMovieFileRecordingSettings")) %init(StereoDaemon);
 #ifdef DIAG_LOG
 	DaemonDiagInstall();
 #endif

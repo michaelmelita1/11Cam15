@@ -13,14 +13,12 @@ include $(THEOS)/makefiles/common.mk
 TWEAK_NAME = 11Cam
 11Cam_FILES = Tweak.x
 11Cam_CFLAGS = -fobjc-arc
+11Cam_FRAMEWORKS = CoreMedia AVFoundation
 ifneq ($(DIAG),)
 11Cam_CFLAGS += $(foreach d,$(DIAG),-D$(d))
 endif
 ifneq ($(EXP),)
 11Cam_CFLAGS += $(foreach e,$(EXP),-DEXP_$(e))
-endif
-ifeq ($(NOQUICKTAKE),1)
-11Cam_CFLAGS += -DNO_QUICKTAKE
 endif
 
 include $(THEOS_MAKE_PATH)/tweak.mk
