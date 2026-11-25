@@ -1,65 +1,69 @@
 # 11Cam
+iPhone 11 Camera App for older iPhones
 
-iPhone 11-style Camera app and features for older iPhones on iOS 15 and 16.
 
-> **Status: 0.1.9.** Tested on iPhone 7 and iPhone 6s (iOS 15.8). iPhone 8 / X on iOS 16,
-> and the 7 Plus, still to be tested.
+# Features
+iPhone 11 Camera UI (SF camera font, control drawer)
 
-## What you get
+Zoom Dial (iPhone 13 Style for dual camera phones, iPhone XS style for single camera phones)
 
-- iPhone 11 Camera UI: SF camera font, control drawer, over-content flip button
-- QuickTake (hold the shutter for video, drag to lock / zoom)
-- Photo aspect ratios (4:3, 16:9, square)
-- Exposure slider
-- Live Text button (the viewfinder shows it when it detects text)
-- iPhone 11 zoom dial, also on single-camera phones
-- Portrait (phones that already have Portrait): Depth Control f/1.4–f/16, lighting
-  strength slider, High-Key Mono, live Stage Light preview
-- Dual-camera phones: View Outside the Frame
-- iPhone 7 / 7 Plus: 4K60 and 1080p240
-- A10 and older: HD video works with the new UI (see "How it works")
-- Settings → Camera shows Apple's own switches for these (QuickTake, Volume Up for
-  Burst, Live Text, View Outside the Frame, ...)
+Photo Aspect Ratios (4:3, 16:9, Square)
 
-Not enabled on purpose: automatic Live Photos (the daemon's scoring needs a Neural Engine),
-capture on touch-down (no effect with QuickTake), responsive shutter, Smart HDR, Night mode,
-Deep Fusion, Photographic Styles. The camera hardware and daemon on these phones don't support them.
+QuickTake + QuickTake Zoom
 
-Experiments (`make package EXP="LOWLIGHT STEREO LIGHTINGPREVIEW MODERNHDR LIVETEXT"`, any subset):
-auto low-light FPS, stereo audio, live Studio/Contour/Stage lighting preview, iPhone 8-style HDR on
-the iPhone 7, Live Text without a Neural Engine. `DIAG=DIAG_LOG` adds diagnostic logs.
+Exposure Slider (adjust exposure without locking)
 
-## How it works
+4K60 and 1080p240 on iPhone 7 and 7 Plus
 
-One dylib, loaded into Camera, Settings and the camera daemon (`mediaserverd`):
+Settings → Camera shows Apple's own switches for these features
 
-- **Camera / Settings.** CameraUI decides every feature in
-  `-[CAMCaptureCapabilities initWithHostProcess:]` from AVGestalt answers (a per-model
-  table in AVFCapture). While that initializer runs, the tweak answers YES to
-  `AVGQDeviceSupportsMomentCapture`, `AVGQHasAppleNeuralEngine` and a few others, and
-  CameraUI derives the new UI itself. AVGestalt is untouched outside that initializer
-  (in Settings, the Camera pane also asks directly, so there the answers always apply).
-- **mediaserverd.** The daemon reads `<model>/AVCaptureSession.plist` and
-  `<model>/CameraSetup.plist` through `FigCaptureCFCreatePropertyList(ForModel)`. The
-  tweak patches the returned dictionaries in memory (no system files are replaced) and
-  clears the daemon's cache of the parsed plist (`com.apple.cameracapture.volatile` →
-  `CaptureSourceInfo`), which would otherwise skip the patch.
-- **HD on A10 and older.** The new UI's crop preview adds a `BWPreviewStitcherNode` that only
-  takes 4:2:0 frames, while HD's stabilisation path on these phones delivers packed 4:2:2
-  (`yuvs`). The tweak puts a pixel-transfer converter in front of the stitcher in the daemon's
-  capture graph (pass-through when the format already fits).
+NOTE: DUAL CAMERAS ARE NEEDED FOR THE FOLLOWING ADDITIONS
 
-Firmware notes and the analysis behind this are in [`CLAUDE.md`](CLAUDE.md).
+Portrait Depth Control (f/1.4 – f/16)
 
-## Building
+Portrait Lighting with High Key Mono, Intensity Control and live Stage Light preview
 
-Requires [Theos](https://theos.dev).
+View Outside the Frame
 
-```sh
-make package               # rootless (iphoneos-arm64)
-make package ROOTFUL=1     # rootful  (iphoneos-arm)
-```
+## Experimental (separate builds)
 
-## Credits
+Live Text (button always visible; reads text from the captured frame)
 
-Michael Melita.
+Auto Low Light FPS (Settings → Camera → Record Video, shows with a 30 fps format selected)
+
+Stereo Audio Recording
+
+Live Studio / Contour / Stage Light preview in Portrait
+
+Auto HDR, iPhone 8 style (iPhone 7 only)
+
+## Download from my repo
+
+https://michaelmelita1.github.io
+
+## Compatibility
+
+iPhone SE - iPhone X (6s, 6s Plus, SE, 7, 7 Plus, 8, 8 Plus, X), iPod 7
+
+iOS 15 - 16, rootless and rootful
+
+Tested on iPhone 7 and iPhone 6s (iOS 15.8). iPhone 8 / X on iOS 16 and the 7 Plus still to be tested.
+
+## THINGS TO FIX
+
+Portrait Bokeh Editing in Photos app
+
+Shutter bug on A11 devices
+
+~~Fix 1080p recording on A9, A10~~ FIXED (properly this time, in the camera daemon)
+
+
+## NOT POSSIBLE - ALREADY TESTED
+
+~~Live Text Detection (Instead of a constant Button)~~ Needs the Neural Engine, not possible on A9 - A11. Constant button works
+
+~~Photographic Styles (Possibly to do with Semanitic Styles)~~ ISP DEPENDANT, not possible
+
+~~Auto Live Photos~~ The camera daemon's scoring needs the Neural Engine, removed
+
+~~Night Mode / Deep Fusion / Smart HDR~~ Need A12 / A13 hardware
