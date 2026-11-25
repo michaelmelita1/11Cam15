@@ -18,6 +18,8 @@ HD Video (1080p / 720p) working with the new UI on A9 and A10
 
 4K60 and 1080p240 on iPhone 7 and 7 Plus
 
+Auto Low Light FPS (Settings → Camera → Record Video, shows with a 30 fps format selected)
+
 Settings → Camera shows Apple's own switches for these features
 
 NOTE: DUAL CAMERAS ARE NEEDED FOR THE FOLLOWING ADDITIONS
@@ -27,8 +29,6 @@ Portrait Depth Control (f/1.4 – f/16), also adjustable afterwards in Photos fo
 Portrait Lighting with High Key Mono, Intensity Control and live Stage Light preview
 
 ## Experimental (separate builds)
-
-Auto Low Light FPS (Settings → Camera → Record Video, shows with a 30 fps format selected)
 
 Stereo Audio Recording (iPhone 8 / 8 Plus / X only, unconfirmed; the iPhone 7 and older just record the same mono sound on both channels)
 
@@ -82,6 +82,6 @@ make package (rootless)
 
 make package ROOTFUL=1 (rootful)
 
-make package EXP="LOWLIGHT STEREO LIGHTINGPREVIEW OVERCAPTURE" (experiments, any subset)
+make package EXP="STEREO LIGHTINGPREVIEW OVERCAPTURE" (experiments, any subset)
 
 make package DIAG=DIAG_LOG (diagnostic logs)

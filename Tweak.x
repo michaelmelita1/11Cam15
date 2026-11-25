@@ -42,6 +42,11 @@
 #import <os/log.h>
 #import <substrate.h>
 
+// Auto Low Light FPS: confirmed on the iPhone 7 (drops 30 -> 25 fps in the dark), so it is in the main build since 0.1.13.
+#ifndef EXP_LOWLIGHT
+#define EXP_LOWLIGHT 1
+#endif
+
 #define LOG(fmt, ...) os_log(OS_LOG_DEFAULT, "[11Cam] " fmt, ##__VA_ARGS__)
 
 #ifdef DIAG_LOG
@@ -124,7 +129,7 @@ static NSDictionary<NSString *, NSNumber *> *BoolOverrides(void) {
 		if (rearPortrait) o[@"AVGQRearFacingCameraStageLightPortraitCaptureCapability"] = @YES;
 		if (frontPortrait) o[@"AVGQFrontFacingCameraStageLightPortraitCaptureCapability"] = @YES;
 
-		// ---- Experiments (`make package EXP="LOWLIGHT STEREO LIGHTINGPREVIEW OVERCAPTURE"`) ----
+		// ---- Experiments (`make package EXP="STEREO LIGHTINGPREVIEW OVERCAPTURE"`) ----
 #ifdef EXP_LOWLIGHT
 		// Auto low-light FPS for 30 fps video (Settings > Camera > Record Video). The daemon
 		// side adds LowLightVideoCaptureSupported/LowLightVideoAEMaxGain to the formats.

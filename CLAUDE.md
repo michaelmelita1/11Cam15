@@ -321,4 +321,13 @@ If the X test shows dual mono, next step is faking the device-tree flag for the 
 ### 0.1.12
 View Outside the Frame moved from the main build to the experiment EXP_OVERCAPTURE (client gestalt AVGQDeviceSupportsSpatialOverCapture +
 daemon format keys), since it's untested on any dual-camera phone. HasDualBackCamera is __attribute__((unused)) so the main build compiles.
-Experiments build: EXP="LOWLIGHT STEREO LIGHTINGPREVIEW OVERCAPTURE".
+Experiments build: EXP="STEREO LIGHTINGPREVIEW OVERCAPTURE".
+
+## Release builds (user preference, from 0.1.12 on)
+Only ship two debs per release: the rootless main build (`make package`) and the rootless experiments+diag build
+(`make package EXP="STEREO LIGHTINGPREVIEW OVERCAPTURE" DIAG=DIAG_LOG`, renamed *-experiments-diag.deb). Plus the source zip.
+No rootful or plain diag builds unless asked.
+
+### 0.1.13
+Auto Low Light FPS promoted to main (Tweak.x defines EXP_LOWLIGHT unconditionally near the includes; code paths unchanged).
+Experiments build: EXP="STEREO LIGHTINGPREVIEW OVERCAPTURE" DIAG=DIAG_LOG.
