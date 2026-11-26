@@ -90,9 +90,10 @@ typedef NS_OPTIONS(uint64_t, Feature) {
 	FStereo           = 1 << 20, // EXP_STEREO: stereo audio in video
 	FLightingPreview  = 1 << 21, // EXP_LIGHTINGPREVIEW: live Studio / Contour Light preview
 	FNightMode        = 1 << 22, // EXP_NIGHTMODE: Night mode on the wide camera
+	FLiveTextDetect   = 1 << 23, // EXP_LIVETEXTDETECT: live text detection in the viewfinder without a Neural Engine
 };
 
-#define kA9A11Base (FNewCameraUI | FExposureSlider | FZoomDial | FLiveText | FAutoLowLightFPS | FLowLightKeys)
+#define kA9A11Base (FNewCameraUI | FExposureSlider | FZoomDial | FLiveText | FAutoLowLightFPS | FLowLightKeys | FLiveTextDetect)
 #define kA12Base   (FExposureSlider | FZoomDial | FAutoLowLightFPS | FLivePhotoAuto)
 
 // One row per phone: hardware models (hw.model), the iOS versions it's made for, and its features.
@@ -122,8 +123,11 @@ static const uint64_t kBuiltExperiments = 0
 #ifdef EXP_NIGHTMODE
 	| FNightMode
 #endif
+#ifdef EXP_LIVETEXTDETECT
+	| FLiveTextDetect
+#endif
 	;
-#define kAllExperiments (FStereo | FLightingPreview | FNightMode)
+#define kAllExperiments (FStereo | FLightingPreview | FNightMode | FLiveTextDetect)
 
 static const PhoneRow *sPhone;
 static uint64_t Features(void) {
@@ -339,7 +343,8 @@ static void EnableLiveText(void) {
 // Keep the rest of Apple's condition: not in image-picker mode, or standard controls shown.
 %hook CAMViewfinderViewController
 - (BOOL)_shouldUseZoomControlInsteadOfSlider {
-	if (%orig) return YES;
+	BOOL orig = %orig;
+	if (orig) return YES;
 	BOOL picker = [self respondsToSelector:@selector(isEmulatingImagePicker)] && ((BOOL (*)(id, SEL))objc_msgSend)(self, @selector(isEmulatingImagePicker));
 	BOOL standard = [self respondsToSelector:@selector(isShowingStandardControls)] && ((BOOL (*)(id, SEL))objc_msgSend)(self, @selector(isShowingStandardControls));
 	return !picker || standard;
@@ -619,6 +624,46 @@ static void HookRecordingDelegate(id delegate) {
 %end
 %end
 
+// Live text detection in the viewfinder (experiment): does the Camera app see text regions offered, ask for
+// them, get results, and draw the indicators?
+@interface CAMPreviewViewController : NSObject
+@end
+@interface AVCaptureMetadataOutput (Private)
+- (BOOL)isTextRegionMetadataSupported;
+@end
+static int sTextRegionBatches;
+%group LiveTextDetectDiag
+%hook AVCaptureMetadataOutput
+- (BOOL)isTextRegionMetadataSupported {
+	BOOL r = %orig;
+	static int last = -1;
+	if (r != last) { last = r; DiagLog(@"EXP livetextdetect: AVCaptureMetadataOutput isTextRegionMetadataSupported = %d", r); }
+	return r;
+}
+- (void)setTextRegionMetadataObjectTypeAvailable:(BOOL)available {
+	DiagLog(@"EXP livetextdetect: Camera set textRegionMetadataObjectTypeAvailable = %d", available);
+	%orig;
+}
+%end
+%hook CAMViewfinderViewController
+- (void)captureController:(id)controller didOutputTextRegionResults:(NSArray *)results {
+	sTextRegionBatches++;
+	if (sTextRegionBatches <= 5 || sTextRegionBatches % 60 == 0)
+		DiagLog(@"EXP livetextdetect: text region results #%d: %lu region(s) %@", sTextRegionBatches, (unsigned long)results.count,
+		        results.count ? [[results.firstObject description] stringByReplacingOccurrencesOfString:@"\n" withString:@" "] : @"");
+	%orig;
+}
+%end
+%hook CAMPreviewViewController
+- (BOOL)_shouldAllowTextRegionIndicators {
+	BOOL r = %orig;
+	static int last = -1;
+	if (r != last) { last = r; DiagLog(@"EXP livetextdetect: preview allows text region indicators = %d", r); }
+	return r;
+}
+%end
+%end
+
 static void DiagStart_(NSString *file, NSArray<NSString *> *dirs);
 static void DiagInstall(void) {
 	static BOOL done;
@@ -639,6 +684,7 @@ static void DiagInstall(void) {
 			}];
 		}
 		%init(Diag);
+		if (Has(FLiveTextDetect) && objc_getClass("AVCaptureMetadataOutput")) %init(LiveTextDetectDiag);
 	}
 }
 
@@ -1157,6 +1203,43 @@ static BOOL sStereoRequested;
 %end
 %end
 
+// Live text detection in the viewfinder (experiment). The camera daemon only lists the text-region
+// metadata type (AVMetadataObjectTypeTextRegion, "MetadataGroup-TextRegion") among a camera's supported
+// metadata when MobileGestalt says HasAppleNeuralEngine (iOS 15.8 and 16.6 alike). Its other two uses of
+// that answer (+[BWInferenceEngine isNeuralEngineSupported], the smart-camera network version) must keep
+// the real answer, so only the call whose next instructions load the "MetadataGroup-TextRegion" string gets YES.
+static Boolean (*orig_MGGetBoolAnswer)(CFStringRef key);
+
+static BOOL CallerAddsTextRegionGroup(const uint32_t *ret) {
+	for (int k = 0; k < 24; k++) {
+		uint32_t a = ret[k];
+		if ((a & 0x9F000000) != 0x90000000) continue; // adrp
+		uint32_t b = ret[k + 1], rd = a & 31;
+		if ((b & 0xFFC00000) != 0x91000000 || ((b >> 5) & 31) != rd) continue; // add xRd, xRd, #imm
+		int64_t imm = (int64_t)(((a >> 29) & 3) | (((a >> 5) & 0x7FFFF) << 2));
+		if (imm & (1 << 20)) imm -= (1 << 21);
+		const uint8_t *cf = (const uint8_t *)((((uintptr_t)&ret[k]) & ~(uintptr_t)0xfff) + (imm << 12) + ((b >> 10) & 0xfff));
+		// A constant CFString: { isa, flags, const char *chars, long length }.
+		const char *chars = (const char *)(*(const uintptr_t *)(cf + 16) & 0x0000000FFFFFFFFFULL);
+		long len = *(const long *)(cf + 24);
+		if (len == 24 && chars && !memcmp(chars, "MetadataGroup-TextRegion", 24)) return YES;
+	}
+	return NO;
+}
+
+static Boolean hook_MGGetBoolAnswer(CFStringRef key) {
+	Boolean answer = orig_MGGetBoolAnswer(key);
+	if (!answer && key && (CFEqual(key, CFSTR("+N9mZUAHooNvMiQnjeTJ8g")) || CFEqual(key, CFSTR("HasAppleNeuralEngine")))
+	    && CallerAddsTextRegionGroup((const uint32_t *)__builtin_return_address(0))) {
+		LOG("live text detection: answering HasAppleNeuralEngine=YES for the text-region metadata list");
+#ifdef DIAG_LOG
+		DiagLog(@"EXP livetextdetect: HasAppleNeuralEngine -> YES for the camera's supported metadata (text regions offered)");
+#endif
+		return true;
+	}
+	return answer;
+}
+
 static BOOL sDaemonHooked;
 
 static void HookDaemonIfReady(void) {
@@ -1170,6 +1253,11 @@ static void HookDaemonIfReady(void) {
 	LOG("daemon hooks installed (%d/%d)", create != NULL, createForModel != NULL);
 	if (Has(FHDVideoFix) && objc_getClass("BWGraph")) %init(DaemonGraph);
 	if (Has(FStereo) && objc_getClass("FigCaptureMovieFileRecordingSettings")) %init(StereoDaemon);
+	if (Has(FLiveTextDetect)) {
+		void *mg = dlsym(RTLD_DEFAULT, "MGGetBoolAnswer");
+		if (mg) MSHookFunction(mg, (void *)hook_MGGetBoolAnswer, (void **)&orig_MGGetBoolAnswer);
+		LOG("live text detection: MGGetBoolAnswer hook %{public}s", mg ? "installed" : "not found");
+	}
 #ifdef DIAG_LOG
 	DaemonDiagInstall();
 #endif
@@ -1205,8 +1293,9 @@ static void ClearCaptureSourceCache(void) {
 }
 
 #ifdef DIAG_LOG
+// The runtime method watch (below) covers View Outside the Frame and, in the experiment, text regions.
 static BOOL OverCaptureWatched(void) {
-	return Has(FOverCapture);
+	return Has(FOverCapture | FLiveTextDetect);
 }
 
 #pragma mark - Diagnostics: View Outside the Frame
@@ -1290,7 +1379,7 @@ static void OCScanClass(Class cls, BOOL isMeta) {
 	Method *ms = class_copyMethodList(cls, &n);
 	for (unsigned i = 0; i < n; i++) {
 		const char *sn = sel_getName(method_getName(ms[i]));
-		if (strcasestr(sn, "overcapture")) OCHookMethod(cls, ms[i], isMeta);
+		if ((Has(FOverCapture) && strcasestr(sn, "overcapture")) || (Has(FLiveTextDetect) && strcasestr(sn, "textregion"))) OCHookMethod(cls, ms[i], isMeta);
 	}
 	free(ms);
 }

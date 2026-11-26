@@ -52,6 +52,8 @@ View Outside the Frame at 2x (XS / XS Max), confirmed on an XS Max with iOS 18.6
 
 Night Mode on the XS / XS Max wide camera (iPhone 11 Pro tuning, unverified)
 
+Live text detection in the viewfinder on the iPhone 6s to X (no Neural Engine; may be slow or not work)
+
 
 Stereo Audio Recording (iPhone 8 / 8 Plus / X only, unconfirmed; the iPhone 7 and older just record the same mono sound on both channels)
 
@@ -106,6 +108,6 @@ make package (rootless)
 
 make package ROOTFUL=1 (rootful)
 
-make package EXP="STEREO LIGHTINGPREVIEW NIGHTMODE" (experiments, any subset)
+make package EXP="STEREO LIGHTINGPREVIEW NIGHTMODE LIVETEXTDETECT" (experiments, any subset)
 
 make package DIAG=DIAG_LOG (diagnostic logs)

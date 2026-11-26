@@ -339,7 +339,7 @@ Experiments build: EXP="STEREO LIGHTINGPREVIEW OVERCAPTURE" DIAG=DIAG_LOG.
 - Daemon: PatchCaptureSessionA12 (livePhotoVitalityScoringSupported, View Outside the Frame on XS via AddOverCaptureKeys, EXP_NIGHTMODE);
   PatchCameraSetup: A12 -> Night mode tuning only (EXP), else SDOF/portrait params. DeviceWithUniqueIDSuffix also matches iOS 18 uniqueName.
 - CFPreferencesGetAppBooleanValue hook iOS 15 only (crashed Camera on XS iOS 18); AVGestalt integer hooks only when IntegerOverrides non-empty (A10).
-- ARCHS arm64 arm64e -> build on the Mac (~/Downloads/tweaks/11Cam15/build.sh: main + experiments-diag). control Conflicts/Replaces exposurecontrol.
+- ARCHS arm64 arm64e -> build on the Mac (~/Downloads/tweaks/11Cam/build.sh: main + experiments-diag). control Conflicts/Replaces exposurecontrol.
 - Diag: VitalityDiag group (A12), View Outside the Frame runtime method logging (OverCaptureWatched: XS, or A9-A11 with EXP_OVERCAPTURE).
 - XR now also gets the single-camera zoom-dial hook (_shouldUseZoomControlInsteadOfSlider). Untested on XR.
 - ExposureControl repo is superseded; its CLAUDE.md history still applies to the A12 code.
@@ -353,3 +353,18 @@ Experiments build: EXP="STEREO LIGHTINGPREVIEW OVERCAPTURE" DIAG=DIAG_LOG.
 Experimental formats left hidden on purpose (user decided not worth it): wide 4k30 (4096x2304), 3k30 (6s/SE), 1080p30-CinemaScope (2592x1080),
 3:2 photo (4096x2732, 6s/SE/7), Square photo (rear+front). Dual-camera high-fps formats (UHD60/1080p240/1080p120/720p240) are hidden on the
 dual device by design (Camera switches to the wide). XS has nothing else hidden. Only 7/7+ UHD60/1080p240 are worth unlocking (already done).
+
+### 0.2.1: EXP_LIVETEXTDETECT (live text detection in the viewfinder, A9-A11)
+- Viewfinder detection = AVMetadataTextRegionObject from the daemon. Client: -[AVCaptureMetadataOutput isTextRegionMetadataSupported] =
+  sourceDevice.supportedMetadataObjectIdentifiers contains AVMetadataObjectTypeTextRegion; CameraUI sets textRegionMetadataObjectTypeAvailable,
+  gets captureController:didOutputTextRegionResults:, draws CAMTextRegionIndicatorView (CAMPreviewViewController _shouldAllowTextRegionIndicators).
+- Daemon (CMCapture, XS 16.6.1 0x1a3d4ec44; iPhone 7 15.8.8 0x1a3b369e4): MGGetBoolAnswer("+N9mZUAHooNvMiQnjeTJ8g" = HasAppleNeuralEngine)
+  gates adding "MetadataGroup-TextRegion" -> @[AVMetadataObjectTypeTextRegion] to the supported metadata. Other users of that MG key:
+  +[BWInferenceEngine isNeuralEngineSupported] and BWInferenceSmartCameraCurrentVersion (two version lists: non-ANE smart camera networks exist).
+  Detection itself goes through Vision's SmartCam5 gating detector (TextRegionGatingEnabled option).
+- Hook: MGGetBoolAnswer in the daemon answers YES only when the caller's next 24 instructions adrp+add a constant CFString
+  "MetadataGroup-TextRegion" (works on both versions). Diag: LiveTextDetectDiag group (client) + runtime "textregion" method watch.
+- Tools: device VM ~/lt (xdis.py capstone disassembler with sym_*.txt names, xref.py adrp/add scanner) on the XS 16.6.1 cache in
+  Downloads/11Cam15-firmware/_work/xs16dsc. The iPhone 7 cache ~/dsc_i7 has no .symbols any more (IPSW deleted).
+- Mac project folder is now ~/Downloads/tweaks/11Cam (renamed from 11Cam15 at the user's request).
+- Newer Logos also breaks %orig inside an expression ("if (%orig)"): assign it to a variable first.
