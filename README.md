@@ -2,6 +2,10 @@
 
 iPhone 11 Camera App & Font for older iPhones
 
+One tweak for the iPhone 6s up to the XS / XR: it picks the right features for each phone.
+
+## iPhone 6s, SE, 7, 8, X
+
 iPhone 11 Camera UI (SF camera font, control drawer)
 
 Zoom Dial (iPhone 11 Style), now on single-camera phones too
@@ -28,13 +32,30 @@ Portrait Depth Control (f/1.4 – f/16), also adjustable afterwards in Photos fo
 
 Portrait Lighting with High Key Mono, Intensity Control and live Stage Light preview
 
+View Outside the Frame at 2x (7 Plus, 8 Plus, X; to be confirmed)
+
+## iPhone XS, XS Max, XR (formerly ExposureControl)
+
+They already have the new Camera UI, QuickTake and Live Text, so they get what they're missing:
+
+Exposure Slider (adjust exposure without locking)
+
+Zoom Dial (iPhone 11 Style)
+
+Automatic Live Photos (the A12 Neural Engine scores each Live Photo)
+
+Auto Low Light FPS
+
+View Outside the Frame at 2x (XS / XS Max), confirmed on an XS Max with iOS 18.6
+
 ## Experimental (separate builds)
+
+Night Mode on the XS / XS Max wide camera (iPhone 11 Pro tuning, unverified)
+
 
 Stereo Audio Recording (iPhone 8 / 8 Plus / X only, unconfirmed; the iPhone 7 and older just record the same mono sound on both channels)
 
 Live Studio / Contour / Stage Light preview in Portrait
-
-View Outside the Frame (dual-camera phones, unconfirmed)
 
 ## Download from my repo
 
@@ -42,11 +63,11 @@ https://michaelmelita1.github.io
 
 ## Compatibility
 
-iPhone SE - iPhone X (6s, 6s Plus, SE, 7, 7 Plus, 8, 8 Plus, X), iPod 7
+iPhone 6s - iPhone XS (6s, 6s Plus, SE, 7, 7 Plus, 8, 8 Plus, X, XS, XS Max, XR), iPod 7
 
-iOS 15 - 16, rootless and rootful
+iOS 15 - 16 (6s to X), iOS 15 - 18 (XS / XR), rootless and rootful
 
-Tested on iPhone 7 and iPhone 6s (iOS 15.8). iPhone 8 / X on iOS 16 and the 7 Plus still to be tested.
+Tested on iPhone 7 and iPhone 6s (iOS 15.8) and iPhone XS Max (iOS 18.6, as ExposureControl). iPhone 8 / X on iOS 16 and the 7 Plus still to be tested.
 
 ## Credits
 
@@ -74,6 +95,9 @@ Portrait Bokeh Editing in Photos app: Photos shows the f-number slider when a ph
 
 ## HOW IT WORKS
 
+A table at the top of Tweak.x lists every supported phone (by hardware model), the iOS versions it is made for, and the features it gets. Unsupported phones or iOS versions are left untouched.
+
+
 One dylib for Camera, Settings and the camera daemon (mediaserverd). It answers the camera feature questions the Camera app asks at launch (no method-by-method hooks), and patches the daemon's camera config in memory (no system files are replaced). Details and firmware notes are in [CLAUDE.md](CLAUDE.md).
 
 ## TO BUILD
@@ -82,6 +106,6 @@ make package (rootless)
 
 make package ROOTFUL=1 (rootful)
 
-make package EXP="STEREO LIGHTINGPREVIEW OVERCAPTURE" (experiments, any subset)
+make package EXP="STEREO LIGHTINGPREVIEW NIGHTMODE" (experiments, any subset)
 
 make package DIAG=DIAG_LOG (diagnostic logs)

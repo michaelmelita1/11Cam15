@@ -331,3 +331,25 @@ No rootful or plain diag builds unless asked.
 ### 0.1.13
 Auto Low Light FPS promoted to main (Tweak.x defines EXP_LOWLIGHT unconditionally near the includes; code paths unchanged).
 Experiments build: EXP="STEREO LIGHTINGPREVIEW OVERCAPTURE" DIAG=DIAG_LOG.
+- Newer Logos (Mac Theos) breaks one-line hooks ending "%orig; }": keep hook bodies multi-line.
+
+## 0.2.0: ExposureControl merged into 11Cam (one package, per-device features)
+- IsA12Phone() (D321AP, D331AP, D331pAP, N841AP) -> former ExposureControl set; everything else -> 11Cam set. BoolOverrides returns
+  early for A12. A12 already has CTM/QuickTake (iOS 14+) and real Live Text, so no CTM/ANE overrides, no EnableLiveText, no stereo.
+- Daemon: PatchCaptureSessionA12 (livePhotoVitalityScoringSupported, View Outside the Frame on XS via AddOverCaptureKeys, EXP_NIGHTMODE);
+  PatchCameraSetup: A12 -> Night mode tuning only (EXP), else SDOF/portrait params. DeviceWithUniqueIDSuffix also matches iOS 18 uniqueName.
+- CFPreferencesGetAppBooleanValue hook iOS 15 only (crashed Camera on XS iOS 18); AVGestalt integer hooks only when IntegerOverrides non-empty (A10).
+- ARCHS arm64 arm64e -> build on the Mac (~/Downloads/tweaks/11Cam15/build.sh: main + experiments-diag). control Conflicts/Replaces exposurecontrol.
+- Diag: VitalityDiag group (A12), View Outside the Frame runtime method logging (OverCaptureWatched: XS, or A9-A11 with EXP_OVERCAPTURE).
+- XR now also gets the single-camera zoom-dial hook (_shouldUseZoomControlInsteadOfSlider). Untested on XR.
+- ExposureControl repo is superseded; its CLAUDE.md history still applies to the A12 code.
+- 0.2.1: View Outside the Frame moved into main for A9-A11 dual-camera phones (user request; untested on 7 Plus / 8 Plus / X). EXP list: STEREO LIGHTINGPREVIEW NIGHTMODE.
+- Feature table (user request): kPhones[] rows {name, hw.model list, min/max iOS major, Feature bitmask}; Features()/Has(f) used everywhere
+  instead of IsA10iPhone/IsA10OrOlder/IsXS/IsA12Phone/HasDualBackCamera. Experiments are bits masked by kBuiltExperiments.
+  Unsupported model or iOS outside the row's range -> %ctor returns without hooking. View Outside the Frame is in main for 7 Plus/8 Plus/X.
+  Version stays 0.2.0 (nothing released since the merge).
+
+## Hidden-format sweep (all firmware in Downloads/11Cam15-firmware, Nov 2026)
+Experimental formats left hidden on purpose (user decided not worth it): wide 4k30 (4096x2304), 3k30 (6s/SE), 1080p30-CinemaScope (2592x1080),
+3:2 photo (4096x2732, 6s/SE/7), Square photo (rear+front). Dual-camera high-fps formats (UHD60/1080p240/1080p120/720p240) are hidden on the
+dual device by design (Camera switches to the wide). XS has nothing else hidden. Only 7/7+ UHD60/1080p240 are worth unlocking (already done).

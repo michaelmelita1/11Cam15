@@ -1,6 +1,12 @@
 #import <AVFoundation/AVFoundation.h>
 #import <CoreMedia/CoreMedia.h>
-// 11Cam: iPhone 11-style Camera app and features for older iPhones (iOS 15/16).
+// 11Cam: iPhone 11-style Camera app and features for older iPhones (iOS 15-18).
+// One tweak, per-device feature sets chosen at runtime from the hardware model:
+//  - iPhone 6s / SE / 7 / 8 / X (A9-A11, iOS 15-16): the whole iPhone 11 Camera UI (below).
+//  - iPhone XS / XS Max / XR (A12, iOS 15-18): they already have the new UI, QuickTake and Live Text
+//    (since iOS 14), so only what they lack: exposure slider, zoom dial, automatic Live Photos, Auto
+//    Low Light FPS, View Outside the Frame (XS / XS Max, at 2x). Formerly the ExposureControl tweak.
+//    Experiment (EXP=NIGHTMODE): Night mode on the XS / XS Max wide camera.
 //
 // How it works (from reading the iOS 16 CameraUI, AVFCapture and CMCapture code):
 //
@@ -42,10 +48,6 @@
 #import <os/log.h>
 #import <substrate.h>
 
-// Auto Low Light FPS: confirmed on the iPhone 7 (drops 30 -> 25 fps in the dark), so it is in the main build since 0.1.13.
-#ifndef EXP_LOWLIGHT
-#define EXP_LOWLIGHT 1
-#endif
 
 #define LOG(fmt, ...) os_log(OS_LOG_DEFAULT, "[11Cam] " fmt, ##__VA_ARGS__)
 
@@ -53,9 +55,11 @@
 static void DiagLog(NSString *fmt, ...) NS_FORMAT_FUNCTION(1, 2);
 static void DiagLogCapabilities(id caps);
 static void DiagInstall(void);
+static void DiagHookOverCapture(void);
+static BOOL OverCaptureWatched(void);
 #endif
 
-#pragma mark - Device info
+#pragma mark - Which features each phone gets
 
 static NSString *HWModel(void) {
 	static NSString *model;
@@ -69,21 +73,79 @@ static NSString *HWModel(void) {
 	return model;
 }
 
-// iPhone 7 / 7 Plus (A10). Their 4K60 and 1080p240 formats exist but are hidden.
-static BOOL IsA10iPhone(void) {
-	NSString *m = HWModel();
-	for (NSString *p in @[@"D10AP", @"D101AP", @"D11AP", @"D111AP"])
-		if ([m isEqualToString:p]) return YES;
-	return NO;
-}
+typedef NS_OPTIONS(uint64_t, Feature) {
+	FNewCameraUI      = 1 << 0,  // QuickTake, SF camera font, control drawer, aspect ratios (CameraUI's CTM UI)
+	FExposureSlider   = 1 << 1,  // adjust exposure without locking
+	FZoomDial         = 1 << 2,  // iPhone 11 zoom dial
+	FLiveText         = 1 << 3,  // Live Text without a Neural Engine (captured-frame text, button always shown); also Depth Control
+	FHDVideoFix       = 1 << 4,  // A9/A10: converter in front of the crop preview's stitcher so 1080p/720p work with the new UI
+	F4K60And240       = 1 << 5,  // iPhone 7 / 7 Plus: un-hide 4K60 and 1080p240
+	FPortraitRear     = 1 << 6,  // Portrait Lighting (High-Key Mono, strength) and live Stage Light preview, rear camera
+	FPortraitFront    = 1 << 7,  //   ... front TrueDepth camera
+	FAutoLowLightFPS  = 1 << 8,  // Auto Low Light FPS for 30 fps video
+	FLowLightKeys     = 1 << 9,  //   the daemon formats need the low-light keys added (A9-A11; the XS / XR already have them)
+	FOverCapture      = 1 << 10, // View Outside the Frame (dual camera, at 2x)
+	FLivePhotoAuto    = 1 << 11, // automatic Live Photos (needs a Neural Engine)
+	// Experiments (only in builds made with EXP=...):
+	FStereo           = 1 << 20, // EXP_STEREO: stereo audio in video
+	FLightingPreview  = 1 << 21, // EXP_LIGHTINGPREVIEW: live Studio / Contour Light preview
+	FNightMode        = 1 << 22, // EXP_NIGHTMODE: Night mode on the wide camera
+};
 
-// A10 and older (iPhone 7/7 Plus, 6s/6s Plus, SE, iPod touch 7th gen).
-static BOOL IsA10OrOlder(void) {
-	NSString *m = HWModel();
-	for (NSString *p in @[@"D10AP", @"D101AP", @"D11AP", @"D111AP", @"N71AP", @"N71mAP", @"N66AP", @"N66mAP", @"N69AP", @"N69uAP", @"N112AP"])
-		if ([m isEqualToString:p]) return YES;
-	return NO;
+#define kA9A11Base (FNewCameraUI | FExposureSlider | FZoomDial | FLiveText | FAutoLowLightFPS | FLowLightKeys)
+#define kA12Base   (FExposureSlider | FZoomDial | FAutoLowLightFPS | FLivePhotoAuto)
+
+// One row per phone: hardware models (hw.model), the iOS versions it's made for, and its features.
+// Everything 11Cam does on a phone is decided here; the rest of the code only asks Has(feature).
+typedef struct { const char *name; const char *models[5]; int minIOS, maxIOS; uint64_t features; } PhoneRow;
+static const PhoneRow kPhones[] = {
+	{ "iPhone 6s / 6s Plus",                   { "N71AP", "N71mAP", "N66AP", "N66mAP", NULL }, 15, 16, kA9A11Base | FHDVideoFix },
+	{ "iPhone SE / iPod touch 7",                { "N69AP", "N69uAP", "N112AP", NULL },          15, 16, kA9A11Base | FHDVideoFix },
+	{ "iPhone 7",                                { "D10AP", "D101AP", NULL },                    15, 16, kA9A11Base | FHDVideoFix | F4K60And240 },
+	{ "iPhone 7 Plus",                           { "D11AP", "D111AP", NULL },                    15, 16, kA9A11Base | FHDVideoFix | F4K60And240 | FPortraitRear | FOverCapture | FLightingPreview },
+	{ "iPhone 8",                                { "D20AP", "D20AAP", "D201AP", "D201AAP", NULL }, 15, 16, kA9A11Base | FStereo },
+	{ "iPhone 8 Plus",                           { "D21AP", "D21AAP", "D211AP", "D211AAP", NULL }, 15, 16, kA9A11Base | FPortraitRear | FOverCapture | FStereo | FLightingPreview },
+	{ "iPhone X",                                { "D22AP", "D221AP", NULL },                    15, 16, kA9A11Base | FPortraitRear | FPortraitFront | FOverCapture | FStereo | FLightingPreview },
+	// The XS / XR have had the new UI, QuickTake and Live Text since iOS 14, and Portrait Lighting natively.
+	{ "iPhone XR",                                { "N841AP", NULL },                            15, 18, kA12Base },
+	{ "iPhone XS / XS Max",                       { "D321AP", "D331AP", "D331pAP", NULL },       15, 18, kA12Base | FOverCapture | FNightMode },
+};
+
+// Experiments not compiled into this build are dropped from every row.
+static const uint64_t kBuiltExperiments = 0
+#ifdef EXP_STEREO
+	| FStereo
+#endif
+#ifdef EXP_LIGHTINGPREVIEW
+	| FLightingPreview
+#endif
+#ifdef EXP_NIGHTMODE
+	| FNightMode
+#endif
+	;
+#define kAllExperiments (FStereo | FLightingPreview | FNightMode)
+
+static const PhoneRow *sPhone;
+static uint64_t Features(void) {
+	static uint64_t features;
+	static dispatch_once_t once;
+	dispatch_once(&once, ^{
+		NSString *model = HWModel();
+		for (size_t i = 0; i < sizeof(kPhones) / sizeof(kPhones[0]) && !sPhone; i++)
+			for (int k = 0; kPhones[i].models[k]; k++)
+				if ([model isEqualToString:@(kPhones[i].models[k])]) { sPhone = &kPhones[i]; break; }
+		NSInteger ios = [[NSProcessInfo processInfo] operatingSystemVersion].majorVersion;
+		if (!sPhone) { LOG("%{public}@ isn't a supported phone; doing nothing", model); return; }
+		if (ios < sPhone->minIOS || ios > sPhone->maxIOS) {
+			LOG("%{public}s on iOS %ld isn't supported (iOS %d-%d); doing nothing", sPhone->name, (long)ios, sPhone->minIOS, sPhone->maxIOS);
+			return;
+		}
+		features = sPhone->features & (~(uint64_t)kAllExperiments | kBuiltExperiments);
+		LOG("%{public}s (%{public}@), iOS %ld: features 0x%llx", sPhone->name, model, (long)ios, features);
+	});
+	return features;
 }
+static inline BOOL Has(uint64_t f) { return (Features() & f) != 0; }
 
 #pragma mark - Client side: AVGestalt answers during CAMCaptureCapabilities init
 
@@ -94,66 +156,43 @@ static BOOL sAlwaysOverride;
 static BOOL (*orig_AVGestaltGetBoolAnswer)(CFStringRef question);
 static long long (*orig_AVGestaltGetIntegerAnswerWithDefault)(CFStringRef question, long long defaultValue);
 
-static BOOL OrigBool(NSString *q) {
-	return orig_AVGestaltGetBoolAnswer ? orig_AVGestaltGetBoolAnswer((__bridge CFStringRef)q) : NO;
-}
-
-__attribute__((unused)) static BOOL HasDualBackCamera(void) {
-	return OrigBool(@"AVGQDeviceHasAggregateCamera") && OrigBool(@"AVGQRearFacingTelephotoCameraCapability");
-}
-
 static NSDictionary<NSString *, NSNumber *> *BoolOverrides(void) {
 	static NSDictionary *overrides;
 	static dispatch_once_t once;
 	dispatch_once(&once, ^{
 		NSMutableDictionary *o = [NSMutableDictionary dictionary];
-
 		// The new Camera UI. In CameraUI this one answer becomes deviceSupportsCTM, which
 		// drives QuickTake, the SF camera font, the over-content flip button, the control
 		// drawer, aspect-ratio crop, the CTM mode selector and dynamic shutter zoom.
-		o[@"AVGQDeviceSupportsMomentCapture"] = @YES;
-		// Exposure slider (needs the CTM UI above).
-		o[@"AVGQDeviceSupportsExposureBiasWithoutExposureLock"] = @YES;
-		// CameraUI enables Live Text (imageAnalysis) and Depth Control
-		// (depthEffectAperture) from this answer.
-		o[@"AVGQHasAppleNeuralEngine"] = @YES;
-
-		// Portrait extras, only where the phone already has Portrait mode.
-		BOOL rearPortrait = OrigBool(@"AVGQRearFacingCameraPortraitModeCapability");
-		BOOL frontPortrait = OrigBool(@"AVGQFrontFacingCameraPortraitModeCapability");
-		if (rearPortrait || frontPortrait) {
+		if (Has(FNewCameraUI)) o[@"AVGQDeviceSupportsMomentCapture"] = @YES;
+		// Exposure slider (needs the CTM UI, which the XS / XR have natively).
+		if (Has(FExposureSlider)) o[@"AVGQDeviceSupportsExposureBiasWithoutExposureLock"] = @YES;
+		// CameraUI enables Live Text (imageAnalysis) and Depth Control (depthEffectAperture) from this answer.
+		if (Has(FLiveText)) o[@"AVGQHasAppleNeuralEngine"] = @YES;
+		if (Has(FPortraitRear | FPortraitFront)) {
 			o[@"AVGQDeviceSupportsPortraitLightEffectFilters"] = @YES;   // Portrait Lighting
 			o[@"AVGQDeviceSupportsPortraitIntensityAdjustments"] = @YES; // lighting strength slider; also makes CameraUI use lighting version 2 (High-Key Mono)
 			o[@"AVGQDeviceSupportsStageLightPortraitPreview"] = @YES;    // live Stage Light preview
 		}
-		if (rearPortrait) o[@"AVGQRearFacingCameraStageLightPortraitCaptureCapability"] = @YES;
-		if (frontPortrait) o[@"AVGQFrontFacingCameraStageLightPortraitCaptureCapability"] = @YES;
-
-		// ---- Experiments (`make package EXP="STEREO LIGHTINGPREVIEW OVERCAPTURE"`) ----
-#ifdef EXP_LOWLIGHT
-		// Auto low-light FPS for 30 fps video (Settings > Camera > Record Video). The daemon
+		if (Has(FPortraitRear)) o[@"AVGQRearFacingCameraStageLightPortraitCaptureCapability"] = @YES;
+		if (Has(FPortraitFront)) o[@"AVGQFrontFacingCameraStageLightPortraitCaptureCapability"] = @YES;
+		// Auto low-light FPS for 30 fps video (Settings > Camera > Record Video). On A9-A11 the daemon
 		// side adds LowLightVideoCaptureSupported/LowLightVideoAEMaxGain to the formats.
-		o[@"AVGQDeviceSupportsAutoLowLightVideo"] = @YES;
-#endif
-#ifdef EXP_STEREO
-		// Stereo audio in video (XR and later). The daemon side marks the microphone as
-		// stereo-capable; Apple's dev switch is CAMFeatureDevelopmentAllowStereoAudioRecording.
-		// Not on A10 and older: the iPhone 7 only fills both channels with the same mono signal.
-		if (!IsA10OrOlder()) o[@"AVGQDeviceSupportsStereoAudioRecording"] = @YES;
-#endif
-#ifdef EXP_OVERCAPTURE
-		// View Outside the Frame, only on dual-camera phones; the daemon side adds the
-		// matching format keys (see PatchExperiments). Untested on a 7 Plus / 8 Plus / X.
-		if (HasDualBackCamera()) o[@"AVGQDeviceSupportsSpatialOverCapture"] = @YES;
-#endif
-#ifdef EXP_LIGHTINGPREVIEW
-		// Live Studio/Contour Light preview in Portrait (Stage is above). The daemon side
-		// turns on the preview renderer's Studio/Contour and Stage paths.
-		if (rearPortrait || frontPortrait) o[@"AVGQDeviceSupportsStudioLightPortraitPreview"] = @YES;
-#endif
-
+		if (Has(FAutoLowLightFPS)) o[@"AVGQDeviceSupportsAutoLowLightVideo"] = @YES;
+		// View Outside the Frame: the wide camera supplies the area outside a 2x shot. The daemon side
+		// adds the matching format keys.
+		if (Has(FOverCapture)) o[@"AVGQDeviceSupportsSpatialOverCapture"] = @YES;
+		// Automatic Live Photos. The daemon side turns on the Live Photo scoring they rely on (A12 Neural Engine).
+		if (Has(FLivePhotoAuto)) o[@"AVGQDeviceSupportsLivePhotoAuto"] = @YES;
+		// Experiments.
+		// Stereo audio in video (XR and later). The daemon side marks the microphone as stereo-capable.
+		if (Has(FStereo)) o[@"AVGQDeviceSupportsStereoAudioRecording"] = @YES;
+		// Live Studio/Contour Light preview in Portrait. The daemon side turns on the preview renderer's paths.
+		if (Has(FLightingPreview)) o[@"AVGQDeviceSupportsStudioLightPortraitPreview"] = @YES;
+		// Night mode (moon button). The daemon side adds the capture modes and tuning.
+		if (Has(FNightMode)) o[@"AVGQRearFacingLowLightCameraCapability"] = @YES;
 		overrides = [o copy];
-		LOG("model %{public}@, AVGestalt overrides: %{public}@", HWModel(), [[overrides allKeys] componentsJoinedByString:@", "]);
+		LOG("AVGestalt overrides: %{public}@", [[overrides allKeys] componentsJoinedByString:@", "]);
 	});
 	return overrides;
 }
@@ -163,7 +202,7 @@ static NSDictionary<NSString *, NSNumber *> *IntegerOverrides(void) {
 	static dispatch_once_t once;
 	dispatch_once(&once, ^{
 		NSMutableDictionary *o = [NSMutableDictionary dictionary];
-		if (IsA10iPhone()) {
+		if (Has(F4K60And240)) {
 			// Matches the formats the daemon side un-hides on iPhone 7 / 7 Plus.
 			o[@"AVGQRearFacingCameraVideoCapture4kMaxFPS"] = @60;
 			o[@"AVGQRearFacingCameraHFRVideoCapture1080pMaxFPS"] = @240;
@@ -277,21 +316,19 @@ static void EnableLiveText(void) {
 	sCapsInitDepth--;
 	// iPhone 11-style zoom dial. CameraUI only enables it with an ultra-wide camera.
 	// (Its style, zoomDialStyle, already follows the new UI once QuickTake is on.)
-	if (me) SetBoolIvar(me, "_zoomPlatterSupported", YES);
-	if ([[[NSProcessInfo processInfo] processName] isEqualToString:@"Camera"]) EnableLiveText();
+	if (me && Has(FZoomDial)) SetBoolIvar(me, "_zoomPlatterSupported", YES);
+	if (Has(FLiveText) && [[[NSProcessInfo processInfo] processName] isEqualToString:@"Camera"]) EnableLiveText();
 	// Live text detection in the viewfinder needs the Neural Engine, but Live Text on a captured
 	// frame works. Keep the Live Text button visible so it can always be tapped.
 	if (me && sLiveTextPatched) SetBoolIvar(me, "_imageAnalysisButtonAlwaysVisible", YES);
-#ifdef EXP_LOWLIGHT
-	if (me) SetBoolIvar(me, "_autoLowLightVideoSupported", YES);
-#endif
-#ifdef EXP_STEREO
+	// Settings may build the capabilities outside the AVGestalt window; set these flags directly too.
+	if (me && Has(FAutoLowLightFPS)) SetBoolIvar(me, "_autoLowLightVideoSupported", YES);
 	// CameraUI only allows stereo for some host processes; Settings may not be one of them.
-	if (me && !IsA10OrOlder()) SetBoolIvar(me, "_stereoAudioRecordingSupported", YES);
-#endif
+	if (me && Has(FStereo)) SetBoolIvar(me, "_stereoAudioRecordingSupported", YES);
 #ifdef DIAG_LOG
 	DiagLog(@"CAMCaptureCapabilities initWithHostProcess:%lld", hostProcess);
 	if (me) DiagLogCapabilities(me);
+	if (OverCaptureWatched()) DiagHookOverCapture();
 #endif
 	return me;
 }
@@ -320,9 +357,15 @@ static void HookGestaltIfReady(void) {
 	void *getInt = dlsym(RTLD_DEFAULT, "AVGestaltGetIntegerAnswer");
 	sGestaltHooked = YES;
 	MSHookFunction(getBool, (void *)hook_AVGestaltGetBoolAnswer, (void **)&orig_AVGestaltGetBoolAnswer);
-	if (getIntWithDefault) MSHookFunction(getIntWithDefault, (void *)hook_AVGestaltGetIntegerAnswerWithDefault, (void **)&orig_AVGestaltGetIntegerAnswerWithDefault);
-	if (getInt) MSHookFunction(getInt, (void *)hook_AVGestaltGetIntegerAnswer, (void **)&orig_AVGestaltGetIntegerAnswer);
-	MSHookFunction((void *)CFPreferencesGetAppBooleanValue, (void *)hook_CFPreferencesGetAppBooleanValue, (void **)&orig_CFPreferencesGetAppBooleanValue);
+	// Integer answers only change on the iPhone 7 / 7 Plus (4K60, 240 fps): leave the getters alone elsewhere.
+	if (IntegerOverrides().count) {
+		if (getIntWithDefault) MSHookFunction(getIntWithDefault, (void *)hook_AVGestaltGetIntegerAnswerWithDefault, (void **)&orig_AVGestaltGetIntegerAnswerWithDefault);
+		if (getInt) MSHookFunction(getInt, (void *)hook_AVGestaltGetIntegerAnswer, (void **)&orig_AVGestaltGetIntegerAnswer);
+	}
+	// Only iOS 15 asks this preference. Don't patch CoreFoundation on newer iOS: on the XS with
+	// iOS 18 this global hook crashed the Camera (pointer-authentication trap on its capture queue).
+	if (![[NSProcessInfo processInfo] isOperatingSystemAtLeastVersion:(NSOperatingSystemVersion){16, 0, 0}])
+		MSHookFunction((void *)CFPreferencesGetAppBooleanValue, (void *)hook_CFPreferencesGetAppBooleanValue, (void **)&orig_CFPreferencesGetAppBooleanValue);
 	LOG("AVGestalt hooks installed");
 }
 
@@ -341,6 +384,7 @@ static void HookClientIfReady(void) {
 	%init(Capabilities);
 #ifdef DIAG_LOG
 	DiagInstall();
+	if (OverCaptureWatched()) DiagHookOverCapture();
 #endif
 	LOG("client hooks installed");
 }
@@ -454,7 +498,8 @@ static void DiagLogCapabilities(id caps) {
 	                       @"_interactiveVideoFormatControlSupported", @"_interactiveVideoFormatControlAlwaysEnabled", @"_exposureSliderSupported",
 	                       @"_autoLowLightVideoSupported", @"_stereoAudioRecordingSupported", @"_backLiveStageLightSupported", @"_frontLiveStageLightSupported",
 	                       @"_imageAnalysisSupported", @"_imageAnalysisButtonAlwaysVisible", @"_backHDRSupported", @"_backAutomaticHDRSupported",
-	                       @"_modernHDRSupported", @"_HDRSettingAllowed", @"_sfCameraFontSupported", @"_zoomPlatterSupported"]) {
+	                       @"_modernHDRSupported", @"_HDRSettingAllowed", @"_sfCameraFontSupported", @"_zoomPlatterSupported",
+	                       @"_livePhotoAutoModeSupported", @"_backSpatialOverCaptureSupported", @"_backLowLightSupported"]) {
 		Ivar v = class_getInstanceVariable(object_getClass(caps), iv.UTF8String);
 		if (v) [s appendFormat:@" %@=%d", [iv substringFromIndex:1], *(BOOL *)((uint8_t *)(__bridge void *)caps + ivar_getOffset(v))];
 	}
@@ -672,16 +717,28 @@ static int sGraphDumpsOK, sGraphDumpsFailed;
 %group DaemonDiag
 // Experiment checks (daemon side).
 %hook FigCaptureSourceConfiguration
-- (void)setLowLightVideoCaptureEnabled:(BOOL)e { DiagLog(@"EXP lowlight: client asked for low-light video = %d", e); %orig; }
+- (void)setLowLightVideoCaptureEnabled:(BOOL)e {
+	DiagLog(@"EXP lowlight: client asked for low-light video = %d", e);
+	%orig;
+}
 %end
 %hook BWFigVideoCaptureStream
-- (void)setLowLightVideoEnabled:(BOOL)e { DiagLog(@"EXP lowlight: camera stream low-light video = %d", e); %orig; }
+- (void)setLowLightVideoEnabled:(BOOL)e {
+	DiagLog(@"EXP lowlight: camera stream low-light video = %d", e);
+	%orig;
+}
 %end
 %hook FigAudioCaptureConnectionConfiguration
-- (void)setBuiltInMicrophoneStereoAudioCaptureEnabled:(BOOL)e { DiagLog(@"EXP stereo: client asked for stereo audio = %d", e); %orig; }
+- (void)setBuiltInMicrophoneStereoAudioCaptureEnabled:(BOOL)e {
+	DiagLog(@"EXP stereo: client asked for stereo audio = %d", e);
+	%orig;
+}
 %end
 %hook BWAudioSourceNode
-- (void)setStereoAudioCaptureEnabled:(BOOL)e { DiagLog(@"EXP stereo: audio source node stereo = %d", e); %orig; }
+- (void)setStereoAudioCaptureEnabled:(BOOL)e {
+	DiagLog(@"EXP stereo: audio source node stereo = %d", e);
+	%orig;
+}
 %end
 @interface BWAudioFormat : NSObject
 @end
@@ -694,8 +751,14 @@ static int sGraphDumpsOK, sGraphDumpsFailed;
 }
 %end
 %hook BWStreamingFilterNode
-- (void)setStudioAndContourRenderingEnabled:(BOOL)e { DiagLog(@"EXP lightingpreview: live Studio/Contour rendering = %d", e); %orig; }
-- (void)setStageRenderingEnabled:(BOOL)e { DiagLog(@"EXP lightingpreview: live Stage rendering = %d", e); %orig; }
+- (void)setStudioAndContourRenderingEnabled:(BOOL)e {
+	DiagLog(@"EXP lightingpreview: live Studio/Contour rendering = %d", e);
+	%orig;
+}
+- (void)setStageRenderingEnabled:(BOOL)e {
+	DiagLog(@"EXP lightingpreview: live Stage rendering = %d", e);
+	%orig;
+}
 - (void)changeToFilters:(id)filters animated:(BOOL)animated {
 	DiagLog(@"EXP lightingpreview: change to filters %@", [[filters description] stringByReplacingOccurrencesOfString:@"\n" withString:@" "]);
 	%orig;
@@ -741,6 +804,22 @@ static int sGraphDumpsOK, sGraphDumpsFailed;
 %end
 %end
 
+// Automatic Live Photos (A12): the daemon scores each Live Photo; Auto mode keeps or drops the movie from it.
+%group VitalityDiag
+%hook BWIrisMovieInfo
+- (void)setVitalityScore:(float)score {
+	DiagLog(@"Live Photo vitality score = %.3f", score);
+	%orig;
+}
+%end
+%hook FigCaptureMovieFileSinkTailPipelineConfiguration
+- (void)setVitalityScoringEnabled:(BOOL)e {
+	DiagLog(@"Live Photo vitality scoring enabled = %d", e);
+	%orig;
+}
+%end
+%end
+
 static void DaemonDiagInstall(void) {
 	DiagStart_(@"11Cam-daemon-diag.txt", @[@"/var/mobile/Library/Caches/com.apple.camera", @"/var/mobile/Library/Caches/com.apple.mediaserverd",
 	                                       @"/var/mobile/Library/Caches", @"/var/mobile/Media", @"/var/mobile/Documents", NSTemporaryDirectory(),
@@ -751,6 +830,11 @@ static void DaemonDiagInstall(void) {
 	} else {
 		DiagLog(@"BWGraph/BWNodeConnection not loaded yet");
 	}
+	if (Has(FLivePhotoAuto) && objc_getClass("BWIrisMovieInfo") && objc_getClass("FigCaptureMovieFileSinkTailPipelineConfiguration")) {
+		%init(VitalityDiag);
+		DiagLog(@"Live Photo scoring hooks installed");
+	}
+	if (OverCaptureWatched()) DiagHookOverCapture();
 }
 #endif
 
@@ -778,30 +862,59 @@ static NSMutableDictionary *FormatsOf(NSMutableDictionary *device) {
 	return Dict(Dict(device[@"MultiStream"])[@"AVCaptureDeviceFormats"]);
 }
 
+// iOS 15-16 name devices "com.apple.avfoundation.avcapturedevice.built-in_video:N" (uniqueID);
+// iOS 18 uses uniqueName instead ("Back Camera", "Back Dual Camera").
 static NSMutableDictionary *DeviceWithUniqueIDSuffix(NSMutableArray *devices, NSString *suffix) {
+	NSString *name = @{@"built-in_video:0": @"Back Camera", @"built-in_video:3": @"Back Dual Camera"}[suffix];
 	for (id d in devices) {
-		NSString *uid = Dict(d)[@"uniqueID"];
+		NSString *uid = Dict(d)[@"uniqueID"], *un = Dict(d)[@"uniqueName"];
 		if ([uid isKindOfClass:[NSString class]] && [uid hasSuffix:suffix]) return d;
+		if (name && [un isKindOfClass:[NSString class]] && [un isEqualToString:name]) return d;
 	}
 	return nil;
 }
 
-#if defined(EXP_LOWLIGHT) || defined(EXP_STEREO) || defined(EXP_LIGHTINGPREVIEW)
-static void PatchExperiments(NSMutableArray *devices);
+
+// View Outside the Frame on dual-camera phones. On the 11 Pro this is declared on the multi-camera
+// device's 12MP and 1080p30 formats, plus ConfigureForSpatialOverCaptureSupport on the main camera's
+// 1080p30. The dual camera's formats are overrides on the wide camera's.
+static void AddOverCaptureKeys(NSMutableDictionary *wideFormats, NSMutableDictionary *dualFormats) {
+	if (!wideFormats || !dualFormats) {
+		LOG("View Outside the Frame: camera formats not found (wide %d, dual %d)", wideFormats != nil, dualFormats != nil);
+#ifdef DIAG_LOG
+		DiagLog(@"View Outside the Frame: NOT patched (wide formats %@, dual formats %@)", wideFormats ? @"found" : @"missing", dualFormats ? @"found" : @"missing");
 #endif
+		return;
+	}
+	Dict(wideFormats[@"1080p30"])[@"ConfigureForSpatialOverCaptureSupport"] = @YES;
+	for (NSString *name in @[@"12MP", @"1080p30"]) {
+		NSMutableDictionary *f = Dict(dualFormats[name]);
+		if (!f) {
+			f = [NSMutableDictionary dictionary];
+			id depth = Dict(dualFormats[@"720p30"])[@"SupportedDepthDataFormats"];
+			if (depth) f[@"SupportedDepthDataFormats"] = depth;
+			dualFormats[name] = f;
+		}
+		f[@"SpatialOverCaptureSupported"] = @YES;
+	}
+	LOG("added View Outside the Frame keys to the dual camera");
+#ifdef DIAG_LOG
+	DiagLog(@"View Outside the Frame: plist patched; dual formats: %@", [[dualFormats allKeys] componentsJoinedByString:@","]);
+	DiagHookOverCapture();
+#endif
+}
 
 static void PatchCaptureSession(NSMutableDictionary *plist) {
 	NSMutableArray *devices = plist[@"AVCaptureDevices"];
 	if (![devices isKindOfClass:[NSMutableArray class]]) return;
 	NSMutableDictionary *wide = DeviceWithUniqueIDSuffix(devices, @"built-in_video:0"); // Back Camera
 	NSMutableDictionary *dual = DeviceWithUniqueIDSuffix(devices, @"built-in_video:3"); // Back Dual Camera
-	NSMutableDictionary *wideFormats = FormatsOf(wide);
+	NSMutableDictionary *wideFormats = FormatsOf(wide), *dualFormats = FormatsOf(dual);
 
 	// iPhone 7 / 7 Plus: un-hide 4K60 and 1080p240 ("Experimental" formats are hidden
 	// from apps). The maintainer's working iOS 15 plists also dropped
 	// SecondaryScalerUnavailable from these two formats.
-	if (IsA10iPhone()) {
-		NSMutableDictionary *dualOverrides = FormatsOf(dual);
+	if (Has(F4K60And240)) {
 		for (NSString *name in @[@"UHD60", @"1080p240"]) {
 			NSMutableDictionary *f = Dict(wideFormats[name]);
 			if (f[@"Experimental"] || f[@"SecondaryScalerUnavailable"]) {
@@ -811,81 +924,95 @@ static void PatchCaptureSession(NSMutableDictionary *plist) {
 			// 7 Plus: the dual camera's formats are overrides on top of the wide camera's, so it
 			// would inherit the un-hidden formats too. Both sensors can't run 4K60/240 at once;
 			// keep them hidden on the dual camera, as the X does, so Camera uses the wide camera.
-			if (dualOverrides) {
-				NSMutableDictionary *d = Dict(dualOverrides[name]);
-				if (!d) { d = [NSMutableDictionary dictionary]; dualOverrides[name] = d; }
+			if (dualFormats) {
+				NSMutableDictionary *d = Dict(dualFormats[name]);
+				if (!d) { d = [NSMutableDictionary dictionary]; dualFormats[name] = d; }
 				d[@"Experimental"] = @YES;
 			}
 		}
 	}
 
-#ifdef EXP_OVERCAPTURE
-	// View Outside the Frame on dual-camera phones. On the 11 Pro this is declared on
-	// the multi-camera devices' 12MP and 1080p30 formats, plus
-	// ConfigureForSpatialOverCaptureSupport on the main camera's 1080p30.
-	NSMutableDictionary *dualFormats = FormatsOf(dual);
-	if (wideFormats && dualFormats) {
-		Dict(wideFormats[@"1080p30"])[@"ConfigureForSpatialOverCaptureSupport"] = @YES;
-		for (NSString *name in @[@"12MP", @"1080p30"]) {
-			NSMutableDictionary *f = Dict(dualFormats[name]);
-			if (!f) {
-				f = [NSMutableDictionary dictionary];
-				id depth = Dict(dualFormats[@"720p30"])[@"SupportedDepthDataFormats"];
-				if (depth) f[@"SupportedDepthDataFormats"] = depth;
-				dualFormats[name] = f;
-			}
-			f[@"SpatialOverCaptureSupported"] = @YES;
-		}
-		LOG("added View Outside the Frame keys to the dual camera");
-	}
-#endif
-#if defined(EXP_LOWLIGHT) || defined(EXP_STEREO) || defined(EXP_LIGHTINGPREVIEW)
-	PatchExperiments(devices);
-#endif
-}
+	// View Outside the Frame. Confirmed in the viewfinder at 2x on an XS Max with iOS 18.6.
+	if (Has(FOverCapture)) AddOverCaptureKeys(wideFormats, dualFormats);
 
-#if defined(EXP_LOWLIGHT) || defined(EXP_STEREO) || defined(EXP_LIGHTINGPREVIEW)
-static void PatchExperiments(NSMutableArray *devices) {
-#ifdef EXP_LOWLIGHT
-	// Auto low-light FPS: the 11 Pro declares these on its 30 fps video formats, with a
-	// low-light gain cap 256/96 = 2.67x its normal AEMaxGain. Use the same ratio here.
-	for (NSString *suffix in @[@"built-in_video:0", @"built-in_video:3"]) {
-		NSMutableDictionary *dev = DeviceWithUniqueIDSuffix(devices, suffix);
-		NSMutableDictionary *formats = FormatsOf(dev);
-		NSMutableDictionary *wideFormats = FormatsOf(DeviceWithUniqueIDSuffix(devices, @"built-in_video:0"));
+	// Automatic Live Photos: the 11 Pro turns on Live Photo scoring here. The daemon also requires a
+	// Neural Engine (+[BWInferenceEngine isNeuralEngineSupported]), which the A12 has.
+	if (Has(FLivePhotoAuto)) {
+		NSMutableDictionary *common = Dict(plist[@"AVCaptureDeviceCommonSettings"]);
+		if (common) common[@"livePhotoVitalityScoringSupported"] = @YES;
+	}
+
+	// Auto low-light FPS (A9-A11; the XS / XR formats already declare it): the 11 Pro declares these on
+	// its 30 fps video formats, with a low-light gain cap 256/96 = 2.67x its normal AEMaxGain. Use the same ratio.
+	if (Has(FLowLightKeys)) {
 		double base = [Dict(wideFormats[@"Common"])[@"AEMaxGain"] doubleValue];
-		if (!formats || base <= 0) continue;
-		for (NSString *name in @[@"720p30", @"1080p30", @"UHD30", @"4k30"]) {
-			NSMutableDictionary *f = Dict(formats[name]);
-			if (!f) continue;
-			f[@"LowLightVideoCaptureSupported"] = @YES;
-			f[@"LowLightVideoAEMaxGain"] = @(round(base * 256.0 / 96.0));
+		for (NSMutableDictionary *formats in @[wideFormats ?: @{}, dualFormats ?: @{}]) {
+			if (base <= 0 || ![formats isKindOfClass:[NSMutableDictionary class]]) continue;
+			for (NSString *name in @[@"720p30", @"1080p30", @"UHD30", @"4k30"]) {
+				NSMutableDictionary *f = Dict(formats[name]);
+				if (!f) continue;
+				f[@"LowLightVideoCaptureSupported"] = @YES;
+				f[@"LowLightVideoAEMaxGain"] = @(round(base * 256.0 / 96.0));
+			}
 		}
+		LOG("low-light video keys added");
 	}
-	LOG("experiment: low-light video keys added");
-#endif
-#ifdef EXP_STEREO
-	NSMutableDictionary *mic = DeviceWithUniqueIDSuffix(devices, @"built-in_audio:0");
-	if (mic && !IsA10OrOlder()) { mic[@"stereoAudioCaptureSupported"] = @YES; LOG("experiment: stereo audio key added"); }
-#endif
-#ifdef EXP_LIGHTINGPREVIEW
-	// Portrait devices: the dual camera's 12MP and the TrueDepth camera's 7MP/12MP formats.
-	for (NSString *suffix in @[@"built-in_video:3", @"built-in_video:4"]) {
-		NSMutableDictionary *formats = FormatsOf(DeviceWithUniqueIDSuffix(devices, suffix));
-		for (NSString *name in @[@"12MP", @"7MP"]) {
-			NSMutableDictionary *f = Dict(formats[name]);
-			if (!f) continue;
-			f[@"StudioAndContourPreviewRenderingSupported"] = @YES;
-			f[@"StagePreviewRenderingSupported"] = @YES;
+
+	// Experiments.
+	if (Has(FStereo)) {
+		NSMutableDictionary *mic = DeviceWithUniqueIDSuffix(devices, @"built-in_audio:0");
+		if (mic) { mic[@"stereoAudioCaptureSupported"] = @YES; LOG("experiment: stereo audio key added"); }
+	}
+	if (Has(FLightingPreview)) {
+		// Portrait devices: the dual camera's 12MP and the TrueDepth camera's 7MP/12MP formats.
+		for (NSString *suffix in @[@"built-in_video:3", @"built-in_video:4"]) {
+			NSMutableDictionary *formats = FormatsOf(DeviceWithUniqueIDSuffix(devices, suffix));
+			for (NSString *name in @[@"12MP", @"7MP"]) {
+				NSMutableDictionary *f = Dict(formats[name]);
+				if (!f) continue;
+				f[@"StudioAndContourPreviewRenderingSupported"] = @YES;
+				f[@"StagePreviewRenderingSupported"] = @YES;
+			}
 		}
+		LOG("experiment: lighting preview keys added");
 	}
-	LOG("experiment: lighting preview keys added");
-#endif
+	if (Has(FNightMode) && wideFormats) {
+		// Night mode ("digital flash"): the 11 Pro declares it on the wide camera's 12MP photo format
+		// and configures its 30 fps preview formats for it. The XS already has the Smart HDR burst
+		// pipeline, UB-LowLight processing times and NightModeMinGainThreshold; it lacks these keys.
+		Dict(wideFormats[@"12MP"])[@"DigitalFlashSupported"] = @YES;
+		for (NSString *name in @[@"1080p30", @"720p30"]) Dict(wideFormats[name])[@"ConfigureForDigitalFlashSupport"] = @YES;
+		LOG("experiment: Night mode keys added");
+	}
+}
+
+#ifdef EXP_NIGHTMODE
+// iPhone 11 Pro wide camera (sensor 0x0503) Night mode tuning from iOS 16.6.1 (identical in 18.6.2):
+// UBCaptureParameters {AdaptiveBracketingParameters, DigitalFlash* thresholds} and
+// NoiseReductionAndSharpeningParameters/StillImage/LowLightUBParameters.
+static NSString *const kNightTuning = @"YnBsaXN0MDDSAQIDGV8QFExvd0xpZ2h0VUJQYXJhbWV0ZXJzXxATVUJDYXB0dXJlUGFyYW1ldGVyc9QEBQYHCBYXGF8QJElTUE11bHRpQmFuZE5vaXNlUmVkdWN0aW9uUGFyYW1ldGVyc18QIExvY2FsQ29udHJhc3RFbmhhbmNlbWVudFN0cmVuZ3RoXxAWUmF3Tm9pc2VGaWx0ZXJTdHJlbmd0aF8QEVNoYXJwZW5pbmdDb250cm9s1AkKCwwNDhMNXxAXQ2hyb21hUHJvY2Vzc2luZ0VuYWJsZWRfEBhDaHJvbWFQcm9jZXNzaW5nU3RyZW5ndGhfEBZMdW1hUHJvY2Vzc2luZ1N0cmVuZ3RoXxAQTXVsdGlCYW5kRW5hYmxlZAmlDxAREhIQChAeEHgQgqUPFBQVERAyEEYQARAtEFDVGhscHR4ft7i5uV8QHEFkYXB0aXZlQnJhY2tldGluZ1BhcmFtZXRlcnNfEDZEaWdpdGFsRmxhc2hBdmFpbGFibGVFZmZlY3RpdmVJbnRlZ3JhdGlvblRpbWVUaHJlc2hvbGRfEC1EaWdpdGFsRmxhc2hSZWNvbW1lbmRSZWd1bGFyRmxhc2hTTlJUaHJlc2hvbGRfEDhEaWdpdGFsRmxhc2hSZWNvbW1lbmRlZEVmZmVjdGl2ZUludGVncmF0aW9uVGltZVRocmVzaG9sZF8QQlN0YXRpb25hcnlEaWdpdGFsRmxhc2hSZWNvbW1lbmRlZEVmZmVjdGl2ZUludGVncmF0aW9uVGltZVRocmVzaG9sZNQgISIjDySJtl8QIEZpcnN0R3JvdXBNYXhOdW1iZXJPZkZyYW1lc0NvdW50V01heE1vZGVXTWluTW9kZV8QH05leHRHcm91cE1heE51bWJlck9mRnJhbWVzQ291bnTfEA8lJicoKSorLC0uLzAxMjM0NV9iaGlqbW5vD3BucXJfECJEeW5hbWljUmFuZ2VDbGlwcGluZ1JhdGlvVGhyZXNob2xkWEhhbmRoZWxkXxAbTGVuc1NoYWRpbmdDb3JyZWN0aW9uQ2VudHJlXxAhTGVuc1NoYWRpbmdDb3JyZWN0aW9uQ29lZmZpY2llbnRzXxASTWF4SW50ZWdyYXRpb25UaW1lXxAfTWF4Tm9taW5hbEVWWmVyb0ludGVncmF0aW9uVGltZVZNaW5BR0NfEBFNb3Rpb25BRVRocmVzaG9sZF8QKk1vdGlvbkRhdGFCaWFzRXJyb3JCYXNlZEludGVncmF0aW9uVGltZUNhcF8QME1vdGlvbkRhdGFCaWFzRXJyb3JUaHJlc2hvbGRUb0NhcEludGVncmF0aW9uVGltZV8QLFByZXZpZXdJbnRlZ3JhdGlvblRpbWVCYXNlZE51bWJlck9mRnJhbWVzQ2FwXxAvUHJldmlld0ludGVncmF0aW9uVGltZVRocmVzaG9sZFRvQ2FwTnVtT2ZGcmFtZXNfEBRTTlJDbGlwcGluZ1RocmVzaG9sZF8QHVNOUlRocmVzaG9sZFRvUmVjb21wdXRlQVdCQ0NNVlRyaXBvZCM/cGJN0vGp/NQ2Nzg5OlVWV18QEUJyYWNrZXRHcm91cFRhYmxlXU1heEVWWmVyb0dhaW5fEBRNYXhUb3RhbEV4cG9zdXJlVGltZV8QEE1pblRvdGFsU05SQm91bmSlO0RJTFDTPD0+P0JDXxATRmlyc3RHcm91cEVWMFJhdGlvc18QEk5leHRHcm91cEVWMFJhdGlvc1hTTlJCb3VuZKpAQEBBQEBBQEBBIz/wAAAAAAAAI0AQAAAAAAAAo0FBQSNAKgAAAAAAANM8PT5FR0iqRkZGQUZGQUZGQSNAAAAAAAAAAKNBQUEjQCAAAAAAAADTPD0+SktBqkFBQUFBQUFBQUGjQUFB0zw9Pk1OT6pISEhISEhISEhIo0hISCPALgAAAAAAANM8PT5RU1SqUlJSUlJSUlJSUiNAMAAAAAAAAKNSUlIjwMOIAAAAAAAjQK9AAAAAAAAjQCQAAAAAAACoQFhZWltcXV4jQECAAAAAAAAjQEkAAAAAAAAjQDoAAAAAAAAjQFkAAAAAAAAjQDcAAAAAAAAjQH9AAAAAAAAjQDIAAAAAAACiYGEjP9/MS/044zwjP9/WbEqT6HmlY2RlZmcjQAFrlF4e2Nkjv/ugkdnlQcEjQCCYif1Ir2AjwCYjncl4MEgjQBUTW0NoTKojQApmZmZmZmYjP7ERFqi48U6mQEBra2xII0AIAAAAAAAAI0BiwAAAAAAAI0BGgAAAAAAAIz/gAAAAAAAAIz/JmZmZmZmaIz+haHKwIMScI0AUAAAAAAAA1DY3ODlzgoOEpHR3e3/TPD0+dXZIqkFBQUFBQUFBQUGjQUFB0zw9Pnh6Qap5eXl5eXl5eXl5I0AYAAAAAAAAo3l5edM8PT58fk+qfX19fX19fX19fSNAKAAAAAAAAKN9fX3TPD0+gIFUqlJSUlJSUlJSUlKjUlJSI0C3cAAAAAAAI0A+AAAAAAAAqECFWYZbh12II0BBgAAAAAAAI0A8AAAAAAAAI0A5AAAAAAAAI0A0AAAAAAAA3iYnKCkqKywtLi8wMTIzip6faGmgbW5voXBucaLUNjc4OYtVm5yljI+SlZjTPD0+jY5DqkBAQEFAQEFAQEGjQUFB0zw9PpCRSKpGRkZBRkZBRkZBo0FBQdM8PT6TlEGqQUFBQUFBQUFBQaNBQUHTPD0+lpdPqkhISEhISEhISEijSEhI0zw9PpmaVKpSUlJSUlJSUlJSo1JSUiNADAAAAAAAAKhAg1lcW4hdnSNALgAAAAAAAKJgYaVjZGVmZ6ZAQGtrbEgQB9Q2Nzg5o1W0taWkqKuusdM8PT6lp0OqpqamQaamQaamQSM/+AAAAAAAAKNBQUHTPD0+qapIqmtra0Fra0Fra0GjQUFB0zw9PqytQapBQUF5eXl5eXl5o3l5edM8PT6vsE+qSEhIfX19fX19faN9fX3TPD0+srNUqlJSUlJSUlJSUlKjUlJSI0AWAAAAAAAAqEBYWVpbXF1eEAMjP7mZmZmZmZojQCkAAAAAAAAjP/QAAAAAAAAACAANACQAOgBDAGoAjQCmALoAwwDdAPgBEQEkASUBKwEtAS8BMQEzATkBOwE9AT8BQQFDAU4BbQGmAdYCEQJWAl8CggKKApICtALVAvoDAwMhA0UDWgN8A4MDlwPEA/cEJgRYBG8EjwSWBJ8EqAS8BMoE4QT0BPoFAQUXBSwFNQVABUkFUgVWBV8FZgVxBXoFfgWHBY4FmQWdBaQFrwWzBbwFwwXOBdcF2wXkBe0F9gX/BggGEQYaBiMGLAY1Bj4GQQZKBlMGWQZiBmsGdAZ9BoYGjwaYBp8GqAaxBroGwwbMBtUG3gbnBuwG8wb+BwIHCQcUBx0HIQcoBzMHPAdAB0cHUgdWB18HaAdxB3oHgweMB5UHsge7B8EHyAfTB9cH3gfpB+0H9Af/CAMICggVCBkIIAgrCC8IOAhBCEoITQhTCFoIXAhlCGsIcgh9CIYIigiRCJwIoAinCLIItgi9CMgIzAjTCN4I4gjrCPQI9gj/CQgAAAAAAAACAQAAAAAAAAC6AAAAAAAAAAAAAAAAAAAJEQ==";
+
+static void AddNightModeTuning(NSMutableDictionary *plist) {
+	NSData *data = [[NSData alloc] initWithBase64EncodedString:kNightTuning options:0];
+	NSDictionary *night = data ? [NSPropertyListSerialization propertyListWithData:data options:NSPropertyListMutableContainersAndLeaves format:NULL error:NULL] : nil;
+	NSMutableDictionary *back = Dict(Dict(plist[@"TuningParameters"])[@"PortTypeBack"]);
+	if (!night || !back) return;
+	[back enumerateKeysAndObjectsUsingBlock:^(id sensorID, id sensor, BOOL *stop) {
+		NSMutableDictionary *ub = Dict(Dict(sensor)[@"UBCaptureParameters"]);
+		if (ub) [(NSDictionary *)night[@"UBCaptureParameters"] enumerateKeysAndObjectsUsingBlock:^(id k, id v, BOOL *s2) { if (!ub[k]) ub[k] = v; }];
+		NSMutableDictionary *still = Dict(Dict(Dict(sensor)[@"NoiseReductionAndSharpeningParameters"])[@"StillImage"]);
+		if (still && !still[@"LowLightUBParameters"]) still[@"LowLightUBParameters"] = night[@"LowLightUBParameters"];
+		LOG("experiment: Night mode tuning added for back sensor %{public}@", sensorID);
+	}];
 }
 #endif
-
 
 static void PatchCameraSetup(NSMutableDictionary *plist) {
+#ifdef EXP_NIGHTMODE
+	if (Has(FNightMode)) AddNightModeTuning(plist);
+#endif
+	// Portrait phones only (the XS / XS Max have Depth Control and lighting strength natively).
+	if (!Has(FPortraitRear | FPortraitFront)) return;
 	// Depth Control and Portrait Lighting strength are tuning parameters. On the
 	// iPhone X the synthetic lens model (SLM) has a 0-0 aperture range and there are
 	// no PortraitLightingParameters; the 11 Pro uses f/1.4-f/16 and 0-1.
@@ -960,7 +1087,7 @@ static CFPropertyListRef hook_FigCaptureCFCreatePropertyListForModel(CFStringRef
 - (BOOL)connectOutput:(id)output toInput:(id)input pipelineStage:(id)stage {
 	id toNode = V(input, @"node");
 	Class stitcher = objc_getClass("BWPreviewStitcherNode"), transfer = objc_getClass("BWPixelTransferNode");
-	if (IsA10OrOlder() && stitcher && transfer && [toNode isKindOfClass:stitcher] && ![V(output, @"node") isKindOfClass:transfer]) {
+	if (Has(FHDVideoFix) && stitcher && transfer && [toNode isKindOfClass:stitcher] && ![V(output, @"node") isKindOfClass:transfer]) {
 		id conv = [[transfer alloc] init];
 		NSError *err = nil;
 		// No fixed output format: the converter's output agrees a format with the stitcher (one of
@@ -1041,13 +1168,8 @@ static void HookDaemonIfReady(void) {
 	if (create) MSHookFunction(create, (void *)hook_FigCaptureCFCreatePropertyList, (void **)&orig_FigCaptureCFCreatePropertyList);
 	if (createForModel) MSHookFunction(createForModel, (void *)hook_FigCaptureCFCreatePropertyListForModel, (void **)&orig_FigCaptureCFCreatePropertyListForModel);
 	LOG("daemon hooks installed (%d/%d)", create != NULL, createForModel != NULL);
-	if (IsA10OrOlder() && objc_getClass("BWGraph")) %init(DaemonGraph);
-#ifdef EXP_STEREO
-	const BOOL stereo = YES;
-#else
-	const BOOL stereo = NO;
-#endif
-	if (stereo && !IsA10OrOlder() && objc_getClass("FigCaptureMovieFileRecordingSettings")) %init(StereoDaemon);
+	if (Has(FHDVideoFix) && objc_getClass("BWGraph")) %init(DaemonGraph);
+	if (Has(FStereo) && objc_getClass("FigCaptureMovieFileRecordingSettings")) %init(StereoDaemon);
 #ifdef DIAG_LOG
 	DaemonDiagInstall();
 #endif
@@ -1068,6 +1190,7 @@ static void ClearCaptureSourceCache(void) {
 
 %ctor {
 	@autoreleasepool {
+		if (!Features()) return; // unsupported phone or iOS version: leave everything alone
 		NSString *process = [[NSProcessInfo processInfo] processName];
 		if ([process isEqualToString:@"mediaserverd"] || [process isEqualToString:@"cameracaptured"]) {
 			ClearCaptureSourceCache();
@@ -1080,3 +1203,113 @@ static void ClearCaptureSourceCache(void) {
 		}
 	}
 }
+
+#ifdef DIAG_LOG
+static BOOL OverCaptureWatched(void) {
+	return Has(FOverCapture);
+}
+
+#pragma mark - Diagnostics: View Outside the Frame
+// Logs every Objective-C method with "OverCapture" in its name in the camera classes (AV*, CAM*, Fig*, BW*):
+// one-argument setters log each call with the value, and other void methods (start/stop/commit style) log each call. Found at runtime, so nothing is guessed.
+// Runs again when more classes may have loaded; each method is hooked once.
+static NSMutableSet<NSString *> *sOCHooked;
+static NSMutableDictionary<NSString *, NSNumber *> *sOCLast;
+
+static BOOL OCWantsClass(const char *n) {
+	return !strncmp(n, "AV", 2) || !strncmp(n, "CAM", 3) || !strncmp(n, "Fig", 3) || !strncmp(n, "BW", 2);
+}
+
+// Why the Camera app turned photo overcapture on/off: the photo output's own support flag, the user's
+// preferences (every BOOL getter on CAMUserPreferences about over capture / outside the frame), and the
+// capabilities' per-mode answer.
+static NSString *OCPhotoState(id photoOutput) {
+	NSMutableString *s = [NSMutableString string];
+	SEL sup = sel_registerName("isSpatialOverCaptureSupported");
+	if ([photoOutput respondsToSelector:sup]) [s appendFormat:@"photoOutput.supported=%d", ((BOOL (*)(id, SEL))objc_msgSend)(photoOutput, sup)];
+	Class prefsCls = objc_getClass("CAMUserPreferences");
+	id prefs = nil;
+	if (prefsCls && [prefsCls respondsToSelector:sel_registerName("preferences")]) prefs = ((id (*)(id, SEL))objc_msgSend)(prefsCls, sel_registerName("preferences"));
+	else if (prefsCls && [prefsCls respondsToSelector:sel_registerName("sharedPreferences")]) prefs = ((id (*)(id, SEL))objc_msgSend)(prefsCls, sel_registerName("sharedPreferences"));
+	if (prefs) {
+		unsigned n = 0; Method *ms = class_copyMethodList(object_getClass(prefs), &n);
+		for (unsigned i = 0; i < n; i++) {
+			const char *sn = sel_getName(method_getName(ms[i]));
+			char ret[8] = {0}; method_getReturnType(ms[i], ret, sizeof ret);
+			if (method_getNumberOfArguments(ms[i]) == 2 && (ret[0] == 'B' || ret[0] == 'c') && (strcasestr(sn, "overcapture") || strcasestr(sn, "outside")))
+				[s appendFormat:@" prefs.%s=%d", sn, ((BOOL (*)(id, SEL))objc_msgSend)(prefs, method_getName(ms[i]))];
+		}
+		free(ms);
+	} else [s appendString:@" (no CAMUserPreferences)"];
+	return s;
+}
+
+static void OCHookMethod(Class cls, Method m, BOOL isMeta) {
+	SEL sel = method_getName(m);
+	const char *sn = sel_getName(sel);
+	NSString *name = [NSString stringWithFormat:@"%c[%s %s]", isMeta ? '+' : '-', class_getName(cls), sn];
+	if ([sOCHooked containsObject:name]) return;
+	unsigned nargs = method_getNumberOfArguments(m);
+	char ret[32] = {0}; method_getReturnType(m, ret, sizeof ret);
+	char arg[32] = {0}; if (nargs == 3) method_getArgumentType(m, 2, arg, sizeof arg);
+	IMP orig = method_getImplementation(m);
+	IMP rep = NULL;
+	if (ret[0] == 'v' && nargs == 3 && (arg[0] == 'B' || arg[0] == 'c')) {
+		BOOL photoOutput = [name isEqualToString:@"-[AVCapturePhotoOutput setSpatialOverCaptureEnabled:]"];
+		rep = imp_implementationWithBlock(^(id me, BOOL v) {
+			DiagLog(@"OC %@ <- %d", name, v);
+			if (photoOutput) DiagLog(@"View Outside the Frame photo decision: %@", OCPhotoState(me));
+			((void (*)(id, SEL, BOOL))orig)(me, sel, v);
+		});
+	} else if (ret[0] == 'v' && nargs == 3 && arg[0] == '@') {
+		rep = imp_implementationWithBlock(^(id me, id v) {
+			NSString *d = [[v description] stringByReplacingOccurrencesOfString:@"\n" withString:@" "];
+			if (d.length > 400) d = [d substringToIndex:400];
+			DiagLog(@"OC %@ <- %@", name, d); ((void (*)(id, SEL, id))orig)(me, sel, v);
+		});
+	} else if (ret[0] == 'v' && nargs == 3 && strchr("iIqQlLsS", arg[0])) {
+		rep = imp_implementationWithBlock(^(id me, long long v) { DiagLog(@"OC %@ <- %lld", name, v); ((void (*)(id, SEL, long long))orig)(me, sel, v); });
+	} else if (ret[0] == 'v' && nargs == 3 && (arg[0] == 'f' || arg[0] == 'd')) {
+		BOOL isF = arg[0] == 'f';
+		rep = isF ? imp_implementationWithBlock(^(id me, float v) { DiagLog(@"OC %@ <- %g", name, v); ((void (*)(id, SEL, float))orig)(me, sel, v); })
+		          : imp_implementationWithBlock(^(id me, double v) { DiagLog(@"OC %@ <- %g", name, v); ((void (*)(id, SEL, double))orig)(me, sel, v); });
+	} else if (ret[0] == 'v' && nargs == 2) {
+		rep = imp_implementationWithBlock(^(id me) { DiagLog(@"OC %@ called", name); ((void (*)(id, SEL))orig)(me, sel); });
+	} else {
+		// Unusual signature: list it so we know it exists, but don't hook it.
+		[sOCHooked addObject:name];
+		DiagLog(@"OC found (not hooked, signature %s%s%s): %@", ret, nargs == 3 ? " arg " : "", arg, name);
+		return;
+	}
+	[sOCHooked addObject:name];
+	method_setImplementation(m, rep);
+}
+
+static void OCScanClass(Class cls, BOOL isMeta) {
+	unsigned n = 0;
+	Method *ms = class_copyMethodList(cls, &n);
+	for (unsigned i = 0; i < n; i++) {
+		const char *sn = sel_getName(method_getName(ms[i]));
+		if (strcasestr(sn, "overcapture")) OCHookMethod(cls, ms[i], isMeta);
+	}
+	free(ms);
+}
+
+static void DiagHookOverCapture(void) {
+	static dispatch_once_t once;
+	dispatch_once(&once, ^{ sOCHooked = [NSMutableSet set]; sOCLast = [NSMutableDictionary dictionary]; });
+	@synchronized (sOCHooked) {
+		NSUInteger before = sOCHooked.count;
+		unsigned count = 0;
+		Class *classes = objc_copyClassList(&count);
+		for (unsigned i = 0; i < count; i++) {
+			const char *cn = class_getName(classes[i]);
+			if (!OCWantsClass(cn)) continue;
+			OCScanClass(classes[i], NO);
+			OCScanClass(object_getClass((id)classes[i]), YES);
+		}
+		free(classes);
+		if (sOCHooked.count != before) DiagLog(@"View Outside the Frame: watching %lu OverCapture methods (%lu new)", (unsigned long)sOCHooked.count, (unsigned long)(sOCHooked.count - before));
+	}
+}
+#endif

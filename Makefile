@@ -4,9 +4,9 @@ THEOS_PACKAGE_SCHEME = rootless
 endif
 
 FINALPACKAGE ?= 1
-ARCHS = arm64
+ARCHS = arm64 arm64e
 TARGET = iphone:clang:latest:15.0
-INSTALL_TARGET_PROCESSES = Camera Preferences mediaserverd
+INSTALL_TARGET_PROCESSES = Camera Preferences
 
 include $(THEOS)/makefiles/common.mk
 
