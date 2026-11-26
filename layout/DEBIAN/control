@@ -1,12 +1,12 @@
 Package: com.michaelmelita1.11cam15
-Version: 0.1.13
+Version: 0.2.0
 Architecture: iphoneos-arm
 Maintainer: Michael Melita
 Depends: mobilesubstrate, firmware (>= 15.0), cy+cpu.arm64
-Conflicts: com.michaelmelita1.11cam15-rootless
-Replaces: com.michaelmelita1.11cam15-rootless
+Conflicts: com.michaelmelita1.11cam15-rootless, com.michaelmelita1.exposurecontrol
+Replaces: com.michaelmelita1.11cam15-rootless, com.michaelmelita1.exposurecontrol
 Section: Tweaks
-Description: iPhone 11 Camera app and features for older iPhones
+Description: iPhone 11 Camera app and features for older iPhones (iPhone 6s to XS / XR)
 Author: Michael Melita
 Name: 11Cam
 Depiction: https://michaelmelita1.github.io/depictions/?p=com.michaelmelita1.11cam15
